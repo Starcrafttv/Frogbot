@@ -98,14 +98,16 @@ class YoutubeDl():
             if 'nextPageToken' not in response.keys():
                 break
             request = self.youtube.playlistItems().list(
-                part='contentDetails',
+                part='contentDetails, snippet',
                 maxResults=50,
                 pageToken=response['nextPageToken'],
                 playlistId=playlistId
             )
             response = request.execute()
-            for video in response['items']:
-                songs.append(Song(video['contentDetails']['videoId'], requester))
+            if response['items']:
+                for video in response['items'][:-1]:
+                    if video['snippet']['thumbnails']:
+                        songs.append(Song(video['contentDetails']['videoId'], requester, video))
         return songs
 
     def ytSearch(self, query: str, length: int, requester: str):

@@ -1,0 +1,5 @@
+- more with youtube api
+- better search command with reactions
+- dockerfile app user with right for frogbot dockerfile
+- test files
+- reaction message also for queue

@@ -1,6 +1,7 @@
 import math
 
 from bot.classes.entry import Active, Afk, saveMessage
+from bot.classes.voiceClient import VoiceClient
 from discord import Colour, Embed
 from discord.ext import commands
 
@@ -14,14 +15,10 @@ class Events(commands.Cog):
         if not guildId in self.bot.voiceClients:
             return
         if guildId in self.bot.voiceClients:
-            if self.bot.voiceClients[guildId].reactMessageId:
-                message = await self.bot.client.get_channel(self.bot.voiceClients[guildId].reactMessageChannelId).fetch_message(self.bot.voiceClients[guildId].reactMessageId)
-                await message.clear_reactions()
             songInfo = currentSong.getInfo()
             embed = (Embed(title=':musical_note: Now playing:',
                            description=f'[{songInfo["title"]}](http://www.youtube.com/watch?v={songInfo["id"]})',
                            color=Colour.blurple())
-                     .add_field(name='Duration', value=songInfo['duration'])
                      .add_field(name='Requested by', value=songInfo['requester'])
                      .add_field(name='Creator', value=songInfo['creator'])
                      .set_thumbnail(url=songInfo['thumbnailUrl']))
@@ -32,10 +29,17 @@ class Events(commands.Cog):
                         name='‎‎\u200b',
                         value=f'Next: {nextSongInfo["title"]}',
                         inline=False)
+            message = await self.bot.client.get_channel(SpamChannelId).send(embed=embed)
+            self.bot.client.dispatch('new_reaction_message', message)
+
+    @commands.Cog.listener()
+    async def on_new_reaction_message(self, message):
+        if message.guild and message.guild.id in self.bot.voiceClients:
+            VoiceClient = self.bot.voiceClients[message.guild.id]
             try:
-                message = await self.bot.client.get_channel(SpamChannelId).send(embed=embed)
-                self.bot.voiceClients[guildId].reactMessageId = message.id
-                self.bot.voiceClients[guildId].reactMessageChannelId = message.channel.id
+                if VoiceClient.reactMessageId:
+                    _message = await self.bot.client.get_channel(VoiceClient.reactMessageChannelId).fetch_message(VoiceClient.reactMessageId)
+                    await _message.clear_reactions()
                 await message.add_reaction('⏮️')
                 await message.add_reaction('⏯️')
                 await message.add_reaction('⏭️')
@@ -44,6 +48,8 @@ class Events(commands.Cog):
                 await message.add_reaction('❌')
             except Exception:
                 pass
+            VoiceClient.reactMessageId = message.id
+            VoiceClient.reactMessageChannelId = message.channel.id
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -90,7 +96,7 @@ class Events(commands.Cog):
                         songInfo = song.getInfo()
                         if songInfo:
                             embed.add_field(name=f'**`{i+1}.`** {songInfo["title"]}',
-                                            value=f'By {songInfo["creator"]}, Length: {songInfo["duration"]}',
+                                            value=f'By {songInfo["creator"]}',
                                             inline=False)
 
                     if self.bot.voiceClients[user.guild.id].queue:
@@ -100,7 +106,8 @@ class Events(commands.Cog):
                     else:
                         embed.add_field(name='Soo empty',
                                         value='\u200b')
-                    await reaction.message.channel.send(embed=embed)
+                    message = await reaction.message.channel.send(embed=embed)
+                    self.bot.client.dispatch('new_reaction_message', message)
                 elif reaction.emoji == '❌':
                     await reaction.message.clear_reactions()
                     await VoiceClient.voiceClient.disconnect()

@@ -149,11 +149,12 @@ class Bot():
                         voiceClient.following = None
 
                 if voiceClient.voiceClient.is_connected() == False:
-                    if voiceClient.reactMessageId:
-                        message = await self.client.get_channel(voiceClient.reactMessageChannelId).fetch_message(voiceClient.reactMessageId)
-                        await message.clear_reactions()
+                    # if voiceClient.reactMessageId:
+                    #    message = await self.client.get_channel(voiceClient.reactMessageChannelId).fetch_message(voiceClient.reactMessageId)
+                    #    await message.clear_reactions()
+                    # Some major issue here!!
                     print(voiceClient.timeout)
-                    print("bot.py - l. 158 - pop - not is_connected")
+                    print("bot.py - l. 156 - pop - not is_connected")
                     self.voiceClients.pop(voiceClient.guildId)
                 elif voiceClient.timeout >= voiceClient.timeoutMax:
                     if voiceClient.reactMessageId:
@@ -161,7 +162,7 @@ class Bot():
                         await message.clear_reactions()
                     await voiceClient.voiceClient.disconnect()
                     print(voiceClient.timeout)
-                    print("bot.py - l. 166 - pop - timeout")
+                    print("bot.py - l. 164 - pop - timeout")
                     self.voiceClients.pop(voiceClient.guildId)
                 elif voiceClient.voiceClient.is_playing() == False and voiceClient.queue == []:
                     voiceClient.timeout += 4

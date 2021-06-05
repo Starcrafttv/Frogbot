@@ -150,7 +150,6 @@ class Music(commands.Cog):
             embed = (Embed(title=':musical_note: Now playing:',
                            description=f'[{songInfo["title"]}](http://www.youtube.com/watch?v={songInfo["id"]})',
                            color=Colour.blurple())
-                     .add_field(name='Duration', value=songInfo['duration'])
                      .add_field(name='Requested by', value=songInfo['requester'])
                      .add_field(name='Creator', value=songInfo['creator'])
                      .set_thumbnail(url=songInfo['thumbnailUrl']))
@@ -166,7 +165,6 @@ class Music(commands.Cog):
             embed = (Embed(title=':musical_note: Now playing:',
                            description=f'[{songInfo["title"]}](http://www.youtube.com/watch?v={songInfo["id"]})',
                            color=Colour.blurple())
-                     .add_field(name='Duration', value=songInfo['duration'])
                      .add_field(name='Creator', value=songInfo['creator'])
                      .set_thumbnail(url=songInfo['thumbnailUrl']))
             channel = await ctx.author.create_dm()
@@ -202,7 +200,7 @@ class Music(commands.Cog):
                 songInfo = song.getInfo()
                 if songInfo:
                     embed.add_field(name=f'**`{i+1}.`** {songInfo["title"]}',
-                                    value=f'By {songInfo["creator"]}, Length: {songInfo["duration"]}',
+                                    value=f'By {songInfo["creator"]}',
                                     inline=False)
 
             if self.bot.voiceClients[ctx.guild.id].queue:
