@@ -1,0 +1,5 @@
+[0, Frogbot]  [1, Lol API token]  [2, Google API] [3, Spotify Client Secret]
+ODQwODYyNTcxMTAyOTk0NDUy.YJeYSw.PlqFLqac-SABt0LSmFgtOBY6W8Q
+RGAPI-e84d7136-c2f9-4a67-ab7a-d9fd9c1892ab
+AIzaSyDKBUWxWUywu61KHjd95zm0Icv8fEwFCTU
+e20df2f56e2040ceaf6a76d5e7f59371

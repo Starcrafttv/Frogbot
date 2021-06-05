@@ -1,0 +1,8 @@
+cassiopeia==4.0.18
+discord.py==1.7.2
+pynacl==1.4.0
+emoji==1.2.0
+google-api-python-client==2.7.0
+spotipy==2.18.0
+youtube-dl==2021.5.16
+matplotlib==3.3.4
