@@ -3,16 +3,16 @@ import datetime
 
 def get_last_days(c, userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
     # Get the timezone from the user id
-    c.execute(f"SELECT Timezone FROM users WHERE UserID = '{userID}'")
+    c.execute(f"SELECT Timezone FROM users WHERE UserID = {userID}")
     timezone = c.fetchone()[0]
     # Create a string if a guild is specified
     GuildString = f" AND GuildID = '{guildID}'" if guildID else ""
     # Get all information about the user
-    c.execute(f"SELECT Start, Stop FROM discordActive WHERE UserID = '{userID}'" + GuildString)
+    c.execute(f"SELECT Start, Stop FROM discordActive WHERE UserID = {userID}" + GuildString)
     active = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f"SELECT Start, Stop FROM discordAfk WHERE UserID = '{userID}'" + GuildString)
+    c.execute(f"SELECT Start, Stop FROM discordAfk WHERE UserID = {userID}" + GuildString)
     afk = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f"SELECT Send FROM discordMessages WHERE UserID = '{userID}'" + GuildString)
+    c.execute(f"SELECT Send FROM discordMessages WHERE UserID = {userID}" + GuildString)
     messages = [entry[0]+(timezone*3600) for entry in c.fetchall()]
     if raw:
         return [username, timezone, requestedDays, active, afk, messages]
@@ -36,34 +36,3 @@ def get_last_days(c, userID: int, username: str, requestedDays: int, guildID: in
             if output[i][0] == str(datetime.datetime.utcfromtimestamp(entry).date()):
                 output[i][3] += 1
     return output
-
-
-def sec_to_time(sec):
-    # Convert seconds to a normalized string
-    m, s = divmod(round(sec), 60)
-    h, m = divmod(m, 60)
-    d, h = divmod(h, 24)
-    if d > 1:
-        if s < 10:
-            s = f'0{s}'
-        if m < 10:
-            m = f'0{m}'
-        return f'{d} days, {h}:{m}:{s}'
-    elif d == 1:
-        if s < 10:
-            s = f'0{s}'
-        if m < 10:
-            m = f'0{m}'
-        return f'{d} day, {h}:{m}:{s}'
-    elif h > 0:
-        if s < 10:
-            s = f'0{s}'
-        if m < 10:
-            m = f'0{m}'
-        return f'{h}:{m}:{s}'
-    elif m > 0:
-        if s < 10:
-            s = f'0{s}'
-        return f'{m}:{s}'
-    else:
-        return f'{s}'

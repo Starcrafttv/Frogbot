@@ -1,17 +1,19 @@
+from discord import Message
 from discord.ext import commands
+from src.bot.bot import Bot
 
 
 class Dmsystem(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: Message):
         if message.author.bot:
             return
 
         if not message.guild and not message.author.bot and message.content[0] != '!':
-            self.bot.c.execute(f"SELECT ChannelID FROM dms WHERE UserID = '{message.author.id}'")
+            self.bot.c.execute(f"SELECT ChannelID FROM dms WHERE UserID = {message.author.id}")
             channelID = self.bot.c.fetchone()
             if not channelID:
                 channel = await self.bot.fetch_channel(self.bot.supportLogChannelId)
@@ -31,15 +33,15 @@ class Dmsystem(commands.Cog):
                 await newChannel.send(f"{message.author.name}: {message.content}")
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO dms (UserID, ChannelID) VALUES ('{message.author.id}', '{newChannel.id}')")
+                        f"INSERT INTO dms (UserID, ChannelID) VALUES ({message.author.id}, {newChannel.id})")
                 await message.reply("Thank you for your message! Our mod team will reply to you as soon as possible.", mention_author=False)
             else:
                 channel = await self.bot.fetch_channel(channelID[0])
                 await channel.send(f"{message.author.name}: {message.content}")
             return
-        self.bot.c.execute(f"SELECT UserID FROM dms WHERE ChannelID = '{message.channel.id}'")
+        self.bot.c.execute(f"SELECT UserID FROM dms WHERE ChannelID = {message.channel.id}")
         userID = self.bot.c.fetchone()
-        self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = '{self.bot.mainGuildId}'")
+        self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {self.bot.mainGuildId}")
         prefix = self.bot.c.fetchone()[0]
         if userID and message.content[0] != prefix:
             await self.bot.get_user(int(userID[0])).send(message.content)
@@ -47,12 +49,12 @@ class Dmsystem(commands.Cog):
 
     @commands.command(name='close', hidden=True)
     @commands.is_owner()
-    async def close(self, ctx):
-        self.bot.c.execute(f"SELECT UserID FROM dms WHERE ChannelID = '{ctx.channel.id}'")
+    async def close(self, ctx: commands.Context):
+        self.bot.c.execute(f"SELECT UserID FROM dms WHERE ChannelID = {ctx.channel.id}")
         userID = self.bot.c.fetchone()
         if userID:
             with self.bot.conn:
-                self.bot.c.execute(f"DELETE FROM dms WHERE UserID = '{userID[0]}'")
+                self.bot.c.execute(f"DELETE FROM dms WHERE UserID = {userID[0]}")
             log = f"User-ID:'{userID[0]}'\n"
             messages = await ctx.channel.history(limit=200).flatten()
             for message in reversed(messages):
@@ -64,7 +66,7 @@ class Dmsystem(commands.Cog):
 
     @commands.command(name='open Dms', aliases=['od'], hidden=True)
     @commands.is_owner()
-    async def openDms(self, ctx):
+    async def openDms(self, ctx: commands.Context):
         self.bot.c.execute(f"SELECT UserID, ChannelID FROM dms")
         message = ""
         for dm in self.bot.c.fetchall():

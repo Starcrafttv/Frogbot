@@ -1,13 +1,14 @@
 import os
 
-import discord
 import src.music.search as search
+from discord import ChannelType, Colour, Embed, Message, Reaction, User
 from discord.ext import commands
+from src.bot.bot import Bot
 from src.music.voicestate import VoiceState
 
 
 class Music(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     def get_voice_state(self, ctx: commands.Context) -> VoiceState:
@@ -26,7 +27,7 @@ class Music(commands.Cog):
         if not ctx.guild:
             raise commands.NoPrivateMessage('This command can\'t be used in DM channels.')
 
-        self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = '{ctx.guild.id}'")
+        self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = {ctx.guild.id}")
         reqRole = self.bot.c.fetchone()
         if reqRole and reqRole[0]:
             if not ctx.guild.get_role(reqRole[0]) in ctx.author.roles:
@@ -110,17 +111,17 @@ class Music(commands.Cog):
 
     async def play_command_message(self, ctx: commands.Context, songs: list):
         if len(songs) == 1:
-            embed = discord.Embed(
+            embed = Embed(
                 title=f'Added song to queue:',
                 description=f'[{songs[0].title}]({songs[0].url})\nCreator: {songs[0].channel_title}, Duration: {songs[0].duration_str}',
-                inline=False, colour=discord.Colour.blue())
+                inline=False, colour=Colour.blue())
             embed.set_thumbnail(url=self.bot.logo_url)
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(
+            embed = Embed(
                 title=f'Added {len(songs)} songs to queue',
                 description=f'1. ‎[{songs[0].title}]({songs[0].url})\n...\n{len(songs)}. ‎‎[{songs[-1].title}]({songs[-1].url})',
-                inline=False, colour=discord.Colour.blue())
+                inline=False, colour=Colour.blue())
             embed.set_thumbnail(url=self.bot.logo_url)
             await ctx.send(embed=embed)
 
@@ -224,11 +225,11 @@ class Music(commands.Cog):
         async with ctx.typing():
             # Search own playlists
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = '{ctx.author.id}'")
+                f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
             playlist_id = self.bot.c.fetchone()
             # If playlist not found in own playlists search for guilds playlists
             if not playlist_id:
-                self.bot.c.execute(f"SELECT PlaylistID FROM playlistsConnection WHERE GuildID = '{ctx.guild.id}'")
+                self.bot.c.execute(f"SELECT PlaylistID FROM playlistsConnection WHERE GuildID = {ctx.guild.id}")
                 ids = self.bot.c.fetchall()
                 for id in ids:
                     if id:
@@ -248,20 +249,20 @@ class Music(commands.Cog):
     async def _saveplaylist(self, ctx: commands.Context, *, playlist_name: str):
         async with ctx.typing():
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = '{ctx.author.id}'")
+                f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
             playlist_id = self.bot.c.fetchone()
             if playlist_id:
                 await ctx.send(f'You already have a playlist named **´{playlist_name}´**')
             else:
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlists (PlaylistName, CreatorID) VALUES ('{playlist_name}', '{ctx.author.id}')")
+                        f"INSERT INTO playlists (PlaylistName, CreatorID) VALUES ('{playlist_name}', {ctx.author.id})")
                 self.bot.c.execute(
-                    f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = '{ctx.author.id}'")
+                    f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
                 playlist_id = self.bot.c.fetchone()[0]
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id}, '{ctx.guild.id}')")
+                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id}, {ctx.guild.id})")
                 ctx.voice_state.save_playlist(playlist_id)
                 await ctx.send(f'Successfully saved the current playlist as **`{playlist_name}`**')
 
@@ -270,7 +271,7 @@ class Music(commands.Cog):
         playlists = '\u200b'
         user_playlists = ''
         self.bot.c.execute(
-            f"SELECT PlaylistID, PlaylistName FROM playlists WHERE CreatorID = '{ctx.author.id}'")
+            f"SELECT PlaylistID, PlaylistName FROM playlists WHERE CreatorID = {ctx.author.id}")
         for playlist in self.bot.c.fetchall():
             user_playlists += f'- **`{playlist[1]}`**\n'
         if user_playlists:
@@ -293,17 +294,17 @@ class Music(commands.Cog):
         if guild_playlists:
             playlists += '\n**`Guild playlists:`**\n' + guild_playlists
 
-        embed = discord.Embed(title=':notepad_spiral: Playlists:',
-                              description=playlists,
-                              inline=False,
-                              colour=discord.Colour.blue())
+        embed = Embed(title=':notepad_spiral: Playlists:',
+                      description=playlists,
+                      inline=False,
+                      colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         await ctx.send(embed=embed)
 
     @commands.command(name='deletePlaylist', aliases=['dp', 'rmp'])
     async def _deletePlaylist(self, ctx, *, playlist_name):
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = '{ctx.author.id}'")
+            f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
             if os.path.isfile(f"data/playlists/{playlist_id[0]}.p"):
@@ -311,24 +312,25 @@ class Music(commands.Cog):
             with self.bot.conn:
                 self.bot.c.execute(f"DELETE FROM playlists WHERE PlaylistID = {playlist_id[0]}")
                 self.bot.c.execute(f"DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]}")
-            await ctx.send(f'Successfully deleted **`{playlist_name}`**')
+            await ctx.send(f'Successfully deleted **{playlist_name}**')
         else:
             await ctx.send('Couldn\'t find your playlist. Make sure you spelled the name right 🐸')
 
     @commands.command(name='guildaddplaylist', aliases=['gap'])
     async def _guildaddplaylist(self, ctx, *, playlist_name):
+        # WARN An error occurred: Command raised an exception: IntegrityError: UNIQUE constraint failed: playlistsConnection.PlaylistID
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = '{ctx.author.id}'")
+            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} AND GuildID = '{ctx.guild.id}'")
+                f"SELECT PlaylistID FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} AND GuildID = {ctx.guild.id}")
 
             if not self.bot.c.fetchone():
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id[0]}, '{ctx.guild.id}')")
-                await ctx.send(f'Added **´{playlist_name}´** to this guild.')
+                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id[0]}, {ctx.guild.id})")
+                await ctx.send(f'Added **{playlist_name}** to this guild.')
             else:
                 await ctx.send(f'Playlist is already connected to this guild.')
         else:
@@ -337,22 +339,22 @@ class Music(commands.Cog):
     @commands.command(name='guildremoveplaylist', aliases=['grp'])
     async def _guildremoveplaylist(self, ctx, *, playlist_name):
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = '{ctx.author.id}'")
+            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
             with self.bot.conn:
                 self.bot.c.execute(
-                    f"DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} and GuildID = '{ctx.guild.id}'")
+                    f"DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} and GuildID = {ctx.guild.id}")
             await ctx.send(f'Removed {playlist_name} from this guild.')
         else:
             await ctx.send('Couldn\'t find your playlist. Make sure you spelled the name right 🐸')
 
     @commands.command(name='ping')
     async def _ping(self, ctx: commands.Context, *, args: str = ''):
-        embed = discord.Embed(title='Latency',
-                              description='‎‎\u200b',
-                              inline=False,
-                              colour=discord.Colour.blue())
+        embed = Embed(title='Latency',
+                      description='‎‎\u200b',
+                      inline=False,
+                      colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         embed.add_field(name='Client latency:', value=f' **`{round(self.bot.latency*1000)}ms`**', inline=False)
         if ctx.guild and ctx.voice_state.voice:
@@ -382,7 +384,7 @@ class Music(commands.Cog):
     async def on_playing_song(self, voiceState: VoiceState):
         if voiceState.music_channel_id:
             channel = self.bot.get_channel(voiceState.music_channel_id)
-            if channel and channel.guild and channel.type == discord.ChannelType.text:
+            if channel and channel.guild and channel.type == ChannelType.text:
                 embed = voiceState.current_song.create_embed()
                 if len(voiceState.queue) and not voiceState._loop_song:
                     song = voiceState.queue[0]
@@ -393,7 +395,7 @@ class Music(commands.Cog):
                 self.bot.dispatch('new_reaction_message', voiceState, message)
 
     @commands.Cog.listener()
-    async def on_new_reaction_message(self, voiceState: VoiceState, message: discord.Message):
+    async def on_new_reaction_message(self, voiceState: VoiceState, message: Message):
         if voiceState.react_message_id:
             _message = await self.bot.get_channel(voiceState.react_message_channel_id).fetch_message(voiceState.react_message_id)
             await _message.clear_reactions()
@@ -408,14 +410,14 @@ class Music(commands.Cog):
         voiceState.react_message_channel_id = message.channel.id
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
+    async def on_reaction_add(self, reaction: Reaction, user: User):
         if user.bot or not user.guild:
             return
         state = self.bot.voice_states.get(user.guild.id)
 
         if state and state.react_message_id == reaction.message.id:
             await reaction.message.remove_reaction(reaction.emoji, user)
-            self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = '{user.guild.id}'")
+            self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = {user.guild.id}")
             reqRole = self.bot.c.fetchone()
             if reqRole and reqRole[0] and user.guild.get_role(reqRole[0]) not in user.roles:
                 return

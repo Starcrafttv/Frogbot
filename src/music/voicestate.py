@@ -3,9 +3,8 @@ import math
 import pickle
 import random
 
-import discord
-from discord import Colour, Embed
-from discord.ext import commands
+from discord import Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, User
+from src.bot.bot import Bot
 
 
 class VoiceError(Exception):
@@ -18,7 +17,7 @@ class VoiceState():
         'options': '-vn',
     }
 
-    def __init__(self, bot: commands.Bot, guild_id: int) -> None:
+    def __init__(self, bot: Bot, guild_id: int) -> None:
         self.bot = bot
         self.guild_id = guild_id
         self.current_song = None
@@ -29,7 +28,7 @@ class VoiceState():
 
         # Load guild settings
         self.bot.c.execute(
-            f"SELECT MusicChannelId, Volume, Timeout FROM guilds WHERE GuildID = '{self.guild_id}'")
+            f"SELECT MusicChannelId, Volume, Timeout FROM guilds WHERE GuildID = {self.guild_id}")
         settings = self.bot.c.fetchone()
         if settings:
             self.music_channel_id = int(settings[0])
@@ -55,11 +54,11 @@ class VoiceState():
         self.audio_player.cancel()
 
     @property
-    def is_playing(self):
+    def is_playing(self) -> bool:
         return self.voice and self.current_song
 
-    def load_playlist(self, requester: discord.User, playlist_id: int) -> None:
-        with open(f"src/data/playlists/{playlist_id}.p", 'rb') as f:
+    def load_playlist(self, requester: User, playlist_id: int) -> None:
+        with open(f"data/playlists/{playlist_id}.p", 'rb') as f:
             songs = pickle.load(f)
         random.shuffle(songs)
         for song in songs:
@@ -68,7 +67,7 @@ class VoiceState():
             self.queue.append(song)
 
     def save_playlist(self, playlist_id: int):
-        with open(f"src/data/playlists/{playlist_id}.p", 'wb') as f:
+        with open(f"data/playlists/{playlist_id}.p", 'wb') as f:
             pickle.dump([self.current_song] + self.queue, f)
 
     def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:
@@ -167,8 +166,8 @@ class VoiceState():
 
             if mp3_url:
                 self.voice.play(
-                    discord.PCMVolumeTransformer(
-                        discord.FFmpegPCMAudio(
+                    PCMVolumeTransformer(
+                        FFmpegPCMAudio(
                             mp3_url,
                             **self.FFMPEG_OPTIONS),
                         self._volume),

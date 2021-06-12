@@ -1,9 +1,9 @@
 # Cogs to enable on Startup
 
 __cogs__ = [
+    'general',
     'recorder',
     'owner',
-    'general',
     'music',
     'stats',
     'average',

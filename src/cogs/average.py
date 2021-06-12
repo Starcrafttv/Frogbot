@@ -1,14 +1,16 @@
 from discord import Colour, Embed
 from discord.ext import commands
-from src.stats.stats import get_last_days, sec_to_time
+from src.bot.bot import Bot
+from src.stats.sec_to_time import sec_to_time
+from src.stats.stats import get_last_days
 
 
 class Average(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(name='average', aliases=['avg'])
-    async def average(self, ctx, *, args=''):
+    async def average(self, ctx: commands.Context, *, args: str = ''):
         if ctx.author.bot:
             return
         # Format all user command inputs into who and last_days
@@ -24,7 +26,7 @@ class Average(commands.Cog):
                     try:
                         requestedDays = int(arg)
                     except ValueError:
-                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = '{ctx.author.id}'")
+                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
                         if self.bot.c.fetchone()[0] >= 7:
                             OtherUser = arg
         # Check if too many or little days are requested

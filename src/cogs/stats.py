@@ -2,14 +2,16 @@ import src.stats.plot as plt
 import src.stats.stats as util
 from discord import Colour, Embed, File
 from discord.ext import commands
+from src.bot.bot import Bot
+from src.stats.sec_to_time import sec_to_time
 
 
 class Stats(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(name='stats', aliases=['info', 'stts', 'sts'])
-    async def _stats(self, ctx, *, args=''):
+    async def _stats(self, ctx: commands.Context, *, args: str = ''):
         if ctx.author.bot:
             return
 
@@ -31,7 +33,7 @@ class Stats(commands.Cog):
                     try:
                         requestedDays = int(arg)
                     except ValueError:
-                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = '{ctx.author.id}'")
+                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
                         if self.bot.c.fetchone()[0] >= 7:
                             OtherUser = arg
 
@@ -60,21 +62,21 @@ class Stats(commands.Cog):
 
         if raw:
             if plt.get_raw_stats(stats[0], stats[1], stats[2], stats[3], stats[4]):
-                await ctx.send('', file=File('src/data/temp/stats.png', filename='stats.png'))
+                await ctx.send('', file=File('data/temp/stats.png', filename='stats.png'))
         elif plot:
             if plt.get_stats(stats):
-                await ctx.send('', file=File('src/data/temp/stats.png', filename='stats.png'))
+                await ctx.send('', file=File('data/temp/stats.png', filename='stats.png'))
         else:
             embed = Embed(
                 title=username,
-                description=f'Total active time: {util.sec_to_time(stats[0][2])}\n'
-                f'Total afk Time: {util.sec_to_time(stats[0][3])}\n'
+                description=f'Total active time: {sec_to_time(stats[0][2])}\n'
+                f'Total afk Time: {sec_to_time(stats[0][3])}\n'
                 f'Total messages sent: {stats[0][4]}', inline=False, colour=Colour.blue())
             for day in stats[1:]:
                 y, m, d = day[0].split('-')
                 embed.add_field(name=f'{d}.{m}.{y[2:]}:',
-                                value=f'- Active time: {util.sec_to_time(day[1])}\n'
-                                      f'- Afk time: {util.sec_to_time(day[2])}\n'
+                                value=f'- Active time: {sec_to_time(day[1])}\n'
+                                      f'- Afk time: {sec_to_time(day[2])}\n'
                                       f'- Messages sent: {day[3]}',
                                 inline=False)
             await ctx.send(embed=embed)

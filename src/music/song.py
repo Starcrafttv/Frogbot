@@ -3,6 +3,7 @@ import re
 import discord
 import youtube_dl
 from discord import Colour, Embed
+from src.music.sec_to_time import sec_to_time
 
 YTDL_OPTIONS = {
     'format': 'bestaudio/best',
@@ -38,7 +39,7 @@ class Song():
         self.published_at = snippet.get('publishedAt')
         content_details = data.get('contentDetails')
         self.duration = self._yt_duration_to_seconds(content_details.get('duration'))
-        self.duration_str = self.sec_to_time(self.duration)
+        self.duration_str = sec_to_time(self.duration)
         thumbnails = snippet.get('thumbnails')
         self.thumbnail_url = thumbnails[list(thumbnails.keys())[-1]]['url']
 
@@ -67,34 +68,3 @@ class Song():
         minutes = int(match[1].strip('M')) if match[1] else 0
         hours = int(match[0].strip('H')) if match[0] else 0
         return seconds + 60 * minutes + 3600 * hours
-
-    @staticmethod
-    def sec_to_time(sec: int) -> str:
-        # Convert seconds to a normalized string
-        m, s = divmod(round(sec), 60)
-        h, m = divmod(m, 60)
-        d, h = divmod(h, 24)
-        if d > 1:
-            if s < 10:
-                s = f'0{s}'
-            if m < 10:
-                m = f'0{m}'
-            return f'{d} days, {h}:{m}:{s}'
-        elif d == 1:
-            if s < 10:
-                s = f'0{s}'
-            if m < 10:
-                m = f'0{m}'
-            return f'{d} day, {h}:{m}:{s}'
-        elif h > 0:
-            if s < 10:
-                s = f'0{s}'
-            if m < 10:
-                m = f'0{m}'
-            return f'{h}:{m}:{s}'
-        elif m > 0:
-            if s < 10:
-                s = f'0{s}'
-            return f'{m}:{s}'
-        else:
-            return f'{s}'

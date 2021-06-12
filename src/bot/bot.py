@@ -4,8 +4,7 @@ import zipfile
 from datetime import datetime
 from time import time
 
-import discord
-from discord import Activity, ActivityType, Game, Intents, Streaming
+from discord import Activity, ActivityType, Game, Intents, Message, Streaming
 from discord.ext import commands, tasks
 from src.bot.__tokens__ import __tokens__
 from src.cogs.__cogs__ import __cogs__
@@ -27,14 +26,14 @@ class Bot(commands.Bot):
         self.usersAfk = {}
         self.usersActive = {}
         # Connect to the database
-        self.database_location = 'src/data/database.db'
+        self.database_location = 'data/database.db'
         self.conn = sqlite3.connect(self.database_location)
         self.c = self.conn.cursor()
         # Create Logger
         self.logger = logging.getLogger('bot')
         self.logger.setLevel(logging.DEBUG)
         # create file handler which logs even debug messages
-        fh = logging.FileHandler('src/data/bot.log')
+        fh = logging.FileHandler('data/bot.log')
         fh.setLevel(logging.DEBUG)
         # create console handler with a higher log level
         ch = logging.StreamHandler()
@@ -57,9 +56,9 @@ class Bot(commands.Bot):
     def _start(self):
         self.run(__tokens__['bot'])
 
-    def _get_prefix(self, _, message: discord.Message):
+    def _get_prefix(self, _, message: Message):
         if message.guild:
-            self.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = '{message.guild.id}'")
+            self.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}")
             prefix = self.c.fetchone()
             if prefix:
                 return prefix[0]
@@ -86,17 +85,18 @@ class Bot(commands.Bot):
         elif _type == 's':
             await self.change_presence(activity=Streaming(name=message, url='http://www.twitch.tv/frogbot__'))
 
-    def loadCog(self, cog):
+    def loadCog(self, cog: str):
         try:
             mod = __import__(f'src.cogs.{cog.lower()}', fromlist=[cog.lower().capitalize()])
             _class = getattr(mod, cog.capitalize())
             self.add_cog(_class(self))
             self.loaded_cogs.append(cog.lower())
         except Exception as e:
+            print(cog, e)
             return e
         return
 
-    def removeCog(self, cog):
+    def removeCog(self, cog: str):
         try:
             self.remove_cog(cog.lower().capitalize())
             self.loaded_cogs.remove(cog.lower())
@@ -117,9 +117,9 @@ class Bot(commands.Bot):
             self.commandCounter = 0
 
             try:
-                zip_archive = zipfile.ZipFile(f'src/data/backup/db_{self.date}.zip', 'w')
-                zip_archive.write('src/data/database.db', compress_type=zipfile.ZIP_DEFLATED)
-                zip_archive.write('src/data/bot.log', compress_type=zipfile.ZIP_DEFLATED)
+                zip_archive = zipfile.ZipFile(f'data/backup/db_{self.date}.zip', 'w')
+                zip_archive.write('data/database.db', compress_type=zipfile.ZIP_DEFLATED)
+                zip_archive.write('data/bot.log', compress_type=zipfile.ZIP_DEFLATED)
                 zip_archive.close()
                 self.logger.info('Backup created')
             except Exception as e:

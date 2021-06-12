@@ -1,16 +1,18 @@
 from discord import Colour, Embed, File
 from discord.ext import commands
+from src.bot.bot import Bot
 from src.stats.plot import get_leaderboard
-from src.stats.stats import get_last_days, sec_to_time
+from src.stats.sec_to_time import sec_to_time
+from src.stats.stats import get_last_days
 
 
 class Leaderboard(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(name='leaderboard', aliases=['lb', 'lboard'])
     @commands.guild_only()
-    async def leaderboard(self, ctx, *, args=''):
+    async def leaderboard(self, ctx: commands.Context, *, args: str = ''):
         if ctx.author.bot:
             return
         top = 5
@@ -25,7 +27,7 @@ class Leaderboard(commands.Cog):
                 if arg in ['plot', 'plt']:
                     plot = True
                 elif arg in ['global', 'total']:
-                    self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = '{ctx.author.id}'")
+                    self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
                     if self.bot.c.fetchone()[0] >= 7:
                         total = True
                 elif arg in ['active', 'online']:
@@ -79,7 +81,7 @@ class Leaderboard(commands.Cog):
                 [user[0] for user in reversed(leaderboard)],
                 [round(user[1]/86400, 3) for user in reversed(leaderboard)],
                     top, time_type, description):
-                await ctx.send(file=File('src/data/temp/stats.png', filename='stats.png'))
+                await ctx.send(file=File('data/temp/stats.png', filename='stats.png'))
         else:
             embed = Embed(title='Leaderboard:',
                           description=description,

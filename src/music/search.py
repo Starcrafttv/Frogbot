@@ -7,7 +7,7 @@ from src.music.song import Song
 
 youtube = build('youtube', 'v3', developerKey=__tokens__['google'])
 sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
-    'a6cc7b005a564ddbb566d7b7adcc7670', __tokens__['spotify']))
+    __tokens__['spotify_client'], __tokens__['spotify']))
 
 
 def get_songs(requester: User, query: str) -> list:

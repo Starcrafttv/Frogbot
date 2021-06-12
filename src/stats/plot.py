@@ -10,7 +10,7 @@ plt.rcParams['text.color'] = '#ffffff'
 plt.rcParams['axes.edgecolor'] = '#ffffff'
 
 
-def get_stats(stats):
+def get_stats(stats: list) -> bool:
     try:
         days = []
         active = []
@@ -50,14 +50,14 @@ def get_stats(stats):
         plt.title(demojize(stats[0][1]), fontsize=15)
         plt.tight_layout()
         # Save the plot in a png
-        plt.savefig('src/data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
+        plt.savefig('data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
         return True
     except Exception:
         # If something goes wrong exit with False
         return False
 
 
-def get_raw_stats(username, timezone, last_days, active, afk):
+def get_raw_stats(username: str, timezone: int, last_days, active: list, afk: list) -> bool:
     try:
         dates = []
         xticks = []
@@ -116,13 +116,13 @@ def get_raw_stats(username, timezone, last_days, active, afk):
                                                        '9:00', '12:00', '15:00', '18:00', '21:00', '24:00'])
         plt.title(demojize(username), fontsize=15)
         plt.tight_layout()
-        plt.savefig('src/data/temp/stats.png', dpi=500, facecolor=fig.get_facecolor())
+        plt.savefig('data/temp/stats.png', dpi=500, facecolor=fig.get_facecolor())
         return True
     except Exception:
         return False
 
 
-def get_leaderboard(usernames, total_stats, top, time_type, description):
+def get_leaderboard(usernames: str, total_stats: list, top: int, time_type: bool, description: str) -> bool:
     try:
         # Setup a new graph
         plt.clf()
@@ -147,13 +147,13 @@ def get_leaderboard(usernames, total_stats, top, time_type, description):
         ax.set_ylabel('')
         plt.title(description, fontsize=15)
         plt.tight_layout()
-        plt.savefig('src/data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
+        plt.savefig('data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
         return True
     except Exception:
         return False
 
 
-def get_compare(users, user_stats, days, r_type):
+def get_compare(users: list, user_stats, days, r_type: int) -> bool:
     try:
         plt.clf()
         width = 0.4
@@ -197,7 +197,7 @@ def get_compare(users, user_stats, days, r_type):
         ax.set_xlabel('')
         ax.legend(frameon=False)
         plt.tight_layout()
-        plt.savefig('src/data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
+        plt.savefig('data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
         return True
     except Exception:
         return False
