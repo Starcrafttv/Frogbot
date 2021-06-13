@@ -14,10 +14,10 @@ class Recorder(commands.Cog):
                     self.bot.c.execute(f"INSERT INTO guilds (GuildID) VALUES ({guild.id})")
             for channel in guild.voice_channels:
                 for member in channel.members:
-                    if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.bot.usersAfk:
-                        self.bot.usersAfk[member.id] = Afk(member.id, channel.id, guild.id)
-                    elif not member.id in self.bot.usersActive:
-                        self.bot.usersActive[member.id] = Active(member.id, channel.id, guild.id)
+                    if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.bot.users_afk:
+                        self.bot.users_afk[member.id] = Afk(member.id, channel.id, guild.id)
+                    elif not member.id in self.bot.users_active:
+                        self.bot.users_active[member.id] = Active(member.id, channel.id, guild.id)
         for user in self.bot.users:
             self.bot.c.execute(f"SELECT UserID FROM users WHERE UserID = {user.id}")
             if not self.bot.c.fetchone():
@@ -27,24 +27,24 @@ class Recorder(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         if (after.afk or after.deaf or after.mute or after.self_deaf or after.self_mute) and after.channel:
-            if not member.id in self.bot.usersAfk:
-                self.bot.usersAfk[member.id] = Afk(member.id, after.channel.id, member.guild.id)
-            if member.id in self.bot.usersActive:
-                self.bot.usersActive[member.id].save(self.bot.conn, self.bot.c)
-                self.bot.usersActive.pop(member.id)
+            if not member.id in self.bot.users_afk:
+                self.bot.users_afk[member.id] = Afk(member.id, after.channel.id, member.guild.id)
+            if member.id in self.bot.users_active:
+                self.bot.users_active[member.id].save(self.bot.conn, self.bot.c)
+                self.bot.users_active.pop(member.id)
         elif after.channel:
-            if not member.id in self.bot.usersActive:
-                self.bot.usersActive[member.id] = Active(member.id, after.channel.id, member.guild.id)
-            if member.id in self.bot.usersAfk:
-                self.bot.usersAfk[member.id].save(self.bot.conn, self.bot.c)
-                self.bot.usersAfk.pop(member.id)
+            if not member.id in self.bot.users_active:
+                self.bot.users_active[member.id] = Active(member.id, after.channel.id, member.guild.id)
+            if member.id in self.bot.users_afk:
+                self.bot.users_afk[member.id].save(self.bot.conn, self.bot.c)
+                self.bot.users_afk.pop(member.id)
         elif not after.channel:
-            if member.id in self.bot.usersAfk:
-                self.bot.usersAfk[member.id].save(self.bot.conn, self.bot.c)
-                self.bot.usersAfk.pop(member.id)
-            elif member.id in self.bot.usersActive:
-                self.bot.usersActive[member.id].save(self.bot.conn, self.bot.c)
-                self.bot.usersActive.pop(member.id)
+            if member.id in self.bot.users_afk:
+                self.bot.users_afk[member.id].save(self.bot.conn, self.bot.c)
+                self.bot.users_afk.pop(member.id)
+            elif member.id in self.bot.users_active:
+                self.bot.users_active[member.id].save(self.bot.conn, self.bot.c)
+                self.bot.users_active.pop(member.id)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: Member):

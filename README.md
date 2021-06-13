@@ -1,5 +1,8 @@
 # Frogbot
 
+[![Python3](https://img.shields.io/badge/python-3.9-green.svg)](https://github.com/Starcrafttv/Frogbot)
+[![Discord Server](https://img.shields.io/badge/Support-Discord%20Server-green.svg)](https://discord.gg/VUqdtHtHqcc)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 ## General:
 This Discord bot logs some interesting information about users in your guild. A user is considered as active if he is in a voice channel and not muted. If he is muted, he is considered as afk. The bot also counts how many messages a user sends per day. This bot encourages members to compare themselves with others and to be more active on the Discord server.
 

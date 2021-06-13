@@ -4,36 +4,38 @@ import zipfile
 from datetime import datetime
 from time import time
 
+import data.config as config
 from discord import Activity, ActivityType, Game, Intents, Message, Streaming
 from discord.ext import commands, tasks
 from src.bot.__tokens__ import __tokens__
 from src.cogs.__cogs__ import __cogs__
+from src.stats.entry import Active, Afk
 
 
 class Bot(commands.Bot):
     def __init__(self):
         self.start_time = time()
         self.date = str(datetime.utcnow().date())
-        self.description = 'a bot'
+        self.description = config.description
         self.loaded_cogs = []
-        self.logo_url = 'https://i.ibb.co/NK4tkyf/Frog-Logonew.png'
-        self.mainGuildId = 809129332684750889
+        self.logo_url = config.logo_url
+        self.mainGuildId = config.mainGuildId
         # dm system config
-        self.supportCategoryId = 809130126410776576
-        self.supportLogChannelId = 809130190507999244
-        self.supportRoleId = 809129502248271922
+        self.support_category_id = config.support_category_id
+        self.support_log_channel_id = config.support_log_channel_id
+        self.support_role_id = config.support_role_id
         # Recorder dicts
-        self.usersAfk = {}
-        self.usersActive = {}
+        self.users_afk = {}
+        self.users_active = {}
         # Connect to the database
-        self.database_location = 'data/database.db'
+        self.database_location = config.database_location
         self.conn = sqlite3.connect(self.database_location)
         self.c = self.conn.cursor()
         # Create Logger
         self.logger = logging.getLogger('bot')
         self.logger.setLevel(logging.DEBUG)
         # create file handler which logs even debug messages
-        fh = logging.FileHandler('data/bot.log')
+        fh = logging.FileHandler(config.logging_file_location)
         fh.setLevel(logging.DEBUG)
         # create console handler with a higher log level
         ch = logging.StreamHandler()
@@ -52,6 +54,7 @@ class Bot(commands.Bot):
         self.remove_command('help')
 
         self.date_loop.start()
+        self.save_entry_loop.start()
 
     def _start(self):
         self.run(__tokens__['bot'])
@@ -129,3 +132,20 @@ class Bot(commands.Bot):
             self.logger.info('Successfully changed date.')
             self.loadNew()
             self.logger.info('Reset of active and afk user')
+
+    @tasks.loop(minutes=10)
+    async def save_entry_loop(self):
+        for user in self.users_active.values():
+            user.save(self.conn, self.c)
+        for user in self.users_afk.values():
+            user.save(self.conn, self.c)
+        self.users_active = {}
+        self.users_afk = {}
+
+        for guild in self.guilds:
+            for channel in guild.voice_channels:
+                for member in channel.members:
+                    if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.users_afk:
+                        self.users_afk[member.id] = Afk(member.id, channel.id, guild.id)
+                    elif not member.id in self.users_active:
+                        self.users_active[member.id] = Active(member.id, channel.id, guild.id)

@@ -91,7 +91,7 @@ class General(commands.Cog):
     async def invite(self, ctx: commands.Context, *, args: str = ''):
         embed = Embed(
             title='\u200b',
-            description=f'[Invite me](https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=8)',
+            description=f'[Invite me](https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=37088320)',
             inline=False, colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         await ctx.send(embed=embed)

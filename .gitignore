@@ -1,5 +1,7 @@
 
 src/bot/__tokens__.py
-.vscode/settings.json
+**/.vscode
 data/database.db
 *.zip
+*.pyc
+.vscode/settings.json

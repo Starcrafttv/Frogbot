@@ -16,14 +16,14 @@ class Dmsystem(commands.Cog):
             self.bot.c.execute(f"SELECT ChannelID FROM dms WHERE UserID = {message.author.id}")
             channelID = self.bot.c.fetchone()
             if not channelID:
-                channel = await self.bot.fetch_channel(self.bot.supportLogChannelId)
+                channel = await self.bot.fetch_channel(self.bot.support_log_channel_id)
                 newChannel = await channel.guild.create_text_channel(f'ticket-{message.author.name}-{message.author.id}')
-                category = self.bot.get_channel(self.bot.supportCategoryId)
+                category = self.bot.get_channel(self.bot.support_category_id)
                 await newChannel.edit(category=category)
                 await newChannel.set_permissions(channel.guild.default_role,
                                                  read_messages=False,
                                                  send_messages=False)
-                await newChannel.set_permissions(channel.guild.get_role(self.bot.supportRoleId),
+                await newChannel.set_permissions(channel.guild.get_role(self.bot.support_role_id),
                                                  send_messages=True,
                                                  read_messages=True,
                                                  embed_links=True,
@@ -60,7 +60,7 @@ class Dmsystem(commands.Cog):
             for message in reversed(messages):
                 log = f"{log}{message.created_at.strftime('%d.%m.%y %H:%M')} | {message.author.name}: {message.content}\n"
             log = f"```{log}```"
-            logChannel = ctx.channel.guild.get_channel(self.bot.supportLogChannelId)
+            logChannel = ctx.channel.guild.get_channel(self.bot.support_log_channel_id)
             await logChannel.send(log)
             await ctx.channel.delete()
 
