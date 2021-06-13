@@ -15,7 +15,7 @@ class General(commands.Cog):
             return
 
         if ctx.guild:
-            self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+            self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
             prefix = self.bot.c.fetchone()[0]
         else:
             prefix = '!'
@@ -53,7 +53,7 @@ class General(commands.Cog):
         if ctx.author.bot and not ctx.guild:
             return
 
-        self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+        self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
         prefix = self.bot.c.fetchone()[0]
 
         embed = Embed(title=':book: A list of all music commands:',
@@ -95,7 +95,7 @@ class General(commands.Cog):
         if ctx.author.bot and not ctx.guild:
             return
 
-        self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+        self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
         prefix = self.bot.c.fetchone()[0]
 
         embed = Embed(title=':book: A list of all playlist commands:',
@@ -135,8 +135,8 @@ class General(commands.Cog):
     @commands.command(name='timezone', aliases=['tz'])
     async def timezone(self, ctx: commands.Context, *, timezone=None):
         if timezone == None:
-            self.bot.c.execute(f"SELECT Timezone FROM users WHERE UserID = {ctx.author.id}")
-            await ctx.send(f":clock9: Your current timezone should be {(datetime.utcnow() + timedelta(hours=self.bot.c.fetchone()[0])).strftime('%H:%M')} o'clock for you.")
+            self.bot.c.execute(f'SELECT Timezone FROM users WHERE UserID = {ctx.author.id}')
+            await ctx.send(f':clock9: Your current timezone should be {(datetime.utcnow() + timedelta(hours=self.bot.c.fetchone()[0])).strftime("%H:%M")} o\'clock for you.')
             return
         try:
             timezone = int(timezone)
@@ -145,8 +145,8 @@ class General(commands.Cog):
                 return
             else:
                 with self.bot.conn:
-                    self.bot.c.execute(f"UPDATE users SET Timezone = {timezone} WHERE UserID = {ctx.author.id}")
-                await ctx.send(f":clock9: Successfully updated your timezone. It should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime('%H:%M')} o'clock for you.")
+                    self.bot.c.execute(f'UPDATE users SET Timezone = {timezone} WHERE UserID = {ctx.author.id}')
+                await ctx.send(f':clock9: Successfully updated your timezone. It should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
                 return
         except ValueError:
             return
@@ -159,17 +159,17 @@ class General(commands.Cog):
         if args[0] in ['prefix']:
             if len(args) > 1 and args[1] and len(args[1]) < 6:
                 with self.bot.conn:
-                    self.bot.c.execute(f"UPDATE guilds SET Prefix = '{args[1]}' WHERE GuildID = {ctx.guild.id}")
-                    await ctx.send(f":white_check_mark: Prefix set to '**`{args[1]}`**' ")
+                    self.bot.c.execute(f'UPDATE guilds SET Prefix = \'{args[1]}\' WHERE GuildID = {ctx.guild.id}')
+                    await ctx.send(f':white_check_mark: Prefix set to \'**`{args[1]}`**\'')
             else:
-                await ctx.send("The prefix can't be longer then five characters.")
+                await ctx.send('The prefix can\'t be longer then five characters.')
         elif args[0] in ['volume', 'vol']:
             if len(args) > 1 and args[1]:
                 try:
                     volume = int(args[1])
                     if 0 <= volume <= 100:
                         with self.bot.conn:
-                            self.bot.c.execute(f"UPDATE guilds SET Volume = {volume} WHERE GuildID = {ctx.guild.id}")
+                            self.bot.c.execute(f'UPDATE guilds SET Volume = {volume} WHERE GuildID = {ctx.guild.id}')
                         if ctx.guild.id in self.bot.voice_states:
                             self.bot.voice_states[ctx.guild.id]._volume = volume/100
                         await ctx.message.add_reaction('🐸')
@@ -184,7 +184,7 @@ class General(commands.Cog):
                     if 0 <= timeout <= 6000:
                         with self.bot.conn:
                             self.bot.c.execute(
-                                f"UPDATE guilds SET Timeout = {timeout} WHERE GuildID = {ctx.guild.id}")
+                                f'UPDATE guilds SET Timeout = {timeout} WHERE GuildID = {ctx.guild.id}')
                         if ctx.guild.id in self.bot.voice_states:
                             self.bot.voice_states[ctx.guild.id].timeout = timeout
                         await ctx.message.add_reaction('🐸')
@@ -198,7 +198,7 @@ class General(commands.Cog):
                     musicrole = int(args[1])
                     with self.bot.conn:
                         self.bot.c.execute(
-                            f"UPDATE guilds SET ReqRole = {musicrole} WHERE GuildID = {ctx.guild.id}")
+                            f'UPDATE guilds SET ReqRole = {musicrole} WHERE GuildID = {ctx.guild.id}')
                     await ctx.message.add_reaction('🐸')
                 except Exception:
                     await ctx.send('The music role must be a number')
@@ -208,7 +208,7 @@ class General(commands.Cog):
                     musicChannelId = int(args[1])
                     with self.bot.conn:
                         self.bot.c.execute(
-                            f"UPDATE guilds SET MusicChannelId = {musicChannelId} WHERE GuildID = {ctx.guild.id}")
+                            f'UPDATE guilds SET MusicChannelId = {musicChannelId} WHERE GuildID = {ctx.guild.id}')
                     if ctx.guild.id in self.bot.voice_states:
                         self.bot.voice_states[ctx.guild.id].music_channel_id = musicChannelId
                     await ctx.message.add_reaction('🐸')
@@ -217,18 +217,15 @@ class General(commands.Cog):
         elif args[0] in ['reset']:
             if len(args) > 1 and args[1] == 'true':
                 with self.bot.conn:
-                    self.bot.c.execute(f"UPDATE guilds SET Prefix = '!' WHERE GuildID = {ctx.guild.id}")
-                    self.bot.c.execute(f"UPDATE guilds SET Volume = 50 WHERE GuildID = {ctx.guild.id}")
-                    self.bot.c.execute(f"UPDATE guilds SET MusicChannelId = 0 WHERE GuildID = {ctx.guild.id}")
-                    self.bot.c.execute(f"UPDATE guilds SET Timeout = 300 WHERE GuildID = {ctx.guild.id}")
-                    self.bot.c.execute(f"UPDATE guilds SET ReqRole = 0 WHERE GuildID = {ctx.guild.id}")
+                    self.bot.c.execute(
+                        f'UPDATE guilds SET Prefix = \'!\', Volume = 50, MusicChannelId = 0, Timeout = 300, Reqrole = 0 WHERE GuildID = {ctx.guild.id}')
                 if ctx.guild.id in self.bot.voice_states:
                     self.bot.voice_states[ctx.guild.id].music_channel_id = 0
                     self.bot.voice_states[ctx.guild.id]._volume = 0.5
                     self.bot.voice_states[ctx.guild.id].timeout = 300
                 await ctx.send(f':white_check_mark: Reset all settings for this guild.')
             else:
-                self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+                self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
                 prefix = self.bot.c.fetchone()[0]
                 embed = Embed(title='Reset',
                               description=f'Resets all settings for the bot in this guild.',
@@ -240,7 +237,7 @@ class General(commands.Cog):
                                 inline=False)
                 await ctx.send(embed=embed)
         else:
-            self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+            self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
             prefix = self.bot.c.fetchone()[0]
             embed = Embed(title=':gear: Frogbot settings',
                           description='Use this command to customize this bot.',
@@ -265,7 +262,7 @@ class General(commands.Cog):
     async def on_message(self, message: Message):
         if not message.author.bot and message.content.find(f'<@!{self.bot.user.id}>') != -1:
             if message.guild:
-                self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}")
+                self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}')
                 await message.channel.send(f'My current prefix is **`{self.bot.c.fetchone()[0]}`**')
             else:
                 await message.channel.send(f'My current prefix is **`!`**')

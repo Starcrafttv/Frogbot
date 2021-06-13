@@ -61,7 +61,7 @@ class Bot(commands.Bot):
 
     def _get_prefix(self, _, message: Message):
         if message.guild:
-            self.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}")
+            self.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}')
             prefix = self.c.fetchone()
             if prefix:
                 return prefix[0]
@@ -74,12 +74,19 @@ class Bot(commands.Bot):
                 self.loadCog(extension)
             except Exception as e:
                 print(e)
-
-        print(f'\nStartup {round(time() - self.start_time, 3)} seconds\n'
-              f'{datetime.utcnow().strftime("%d.%m.%Y %H:%M:%S")}\n'
-              f'\nLOGGED IN AS\n'
-              f'Username: \'{self.user.name}#{self.user.discriminator}\'\n'
-              f'ID: \'{self.user.id}\'\n')
+        print(f'\n   Frogbot:\n'
+              f'┌────────────────────────────────────────────────\n'
+              f'│  Startup in {round(time() - self.start_time, 3)} seconds\n'
+              f'│  {datetime.utcnow().strftime("%d.%m.%Y %H:%M:%S")}\n'
+              f'├────────────────────────────────────────────────\n'
+              f'│  Version 1.0.0\n'
+              f'│  Created by Niklas Mohler\n'
+              f'│  Github https://github.com/Starcrafttv/Frogbot\n'
+              f'├────────────────────────────────────────────────\n'
+              f'│  LOGGED IN AS\n'
+              f'│  Username: \'{self.user.name}#{self.user.discriminator}\'\n'
+              f'│  ID: \'{self.user.id}\'\n'
+              f'└────────────────────────────────────────────────\n')
         self.logger.info(
             f'Started {self.user.name}#{self.user.discriminator}, ID = {self.user.id} in {round(time() - self.start_time, 3)} seconds')
 
@@ -119,7 +126,7 @@ class Bot(commands.Bot):
             try:
                 with self.conn:
                     self.c.execute(
-                        f"INSERT INTO botStats (Date, Guilds, CommandsUsed) VALUES ('{str(self.date)}', {len(self.guilds)}, {self.commandCounter})")
+                        f'INSERT INTO botStats (Date, Guilds, CommandsUsed) VALUES (\'{str(self.date)}\', {len(self.guilds)}, {self.commandCounter})')
             except Exception as e:
                 self.logger.exception(f'update_date - {e}')
             self.commandCounter = 0
@@ -150,7 +157,8 @@ class Bot(commands.Bot):
         for guild in self.guilds:
             for channel in guild.voice_channels:
                 for member in channel.members:
-                    if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.users_afk:
-                        self.users_afk[member.id] = Afk(member.id, channel.id, guild.id)
-                    elif not member.id in self.users_active:
-                        self.users_active[member.id] = Active(member.id, channel.id, guild.id)
+                    if not member.bot:
+                        if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.users_afk:
+                            self.users_afk[member.id] = Afk(member.id, channel.id, guild.id)
+                        elif not member.id in self.users_active:
+                            self.users_active[member.id] = Active(member.id, channel.id, guild.id)

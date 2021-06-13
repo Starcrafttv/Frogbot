@@ -33,15 +33,15 @@ class Stats(commands.Cog):
                     try:
                         requestedDays = int(arg)
                     except ValueError:
-                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
+                        self.bot.c.execute(f'SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}')
                         if self.bot.c.fetchone()[0] >= 7:
                             OtherUser = arg
 
         if requestedDays > 100:
-            await ctx.send("Sorry, but you can't requested more then 100 days.")
+            await ctx.send('Sorry, but you can\'t requested more then 100 days.')
             return
         elif requestedDays < 1:
-            await ctx.send("Sorry, but you can't requested less then 1 day.")
+            await ctx.send('Sorry, but you can\'t requested less then 1 day.')
             return
 
         if OtherUser:
@@ -51,7 +51,7 @@ class Stats(commands.Cog):
                     userID = member.id
                     break
             else:
-                await ctx.send(f"User '{OtherUser}' not found.")
+                await ctx.send(f'User \'{OtherUser}\' not found.')
                 return
         else:
             username = f'{ctx.author.name}#{ctx.author.discriminator}'

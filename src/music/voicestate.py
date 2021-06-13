@@ -28,7 +28,7 @@ class VoiceState():
 
         # Load guild settings
         self.bot.c.execute(
-            f"SELECT MusicChannelId, Volume, Timeout FROM guilds WHERE GuildID = {self.guild_id}")
+            f'SELECT MusicChannelId, Volume, Timeout FROM guilds WHERE GuildID = {self.guild_id}')
         settings = self.bot.c.fetchone()
         if settings:
             self.music_channel_id = int(settings[0])
@@ -58,7 +58,7 @@ class VoiceState():
         return self.voice and self.current_song
 
     def load_playlist(self, requester: User, playlist_id: int) -> None:
-        with open(f"data/playlists/{playlist_id}.p", 'rb') as f:
+        with open(f'data/playlists/{playlist_id}.p', 'rb') as f:
             songs = pickle.load(f)
         random.shuffle(songs)
         for song in songs:
@@ -67,7 +67,7 @@ class VoiceState():
             self.queue.append(song)
 
     def save_playlist(self, playlist_id: int):
-        with open(f"data/playlists/{playlist_id}.p", 'wb') as f:
+        with open(f'data/playlists/{playlist_id}.p', 'wb') as f:
             pickle.dump([self.current_song] + self.queue, f)
 
     def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:

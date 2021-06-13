@@ -69,7 +69,7 @@ def get_youtube_video(requester: User, ids: list) -> list[Song]:
         id_string += ids[-1]
 
         request = youtube.videos().list(
-            part="snippet,contentDetails",
+            part='snippet,contentDetails',
             id=id_string
         )
         response = request.execute()

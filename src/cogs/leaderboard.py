@@ -27,7 +27,7 @@ class Leaderboard(commands.Cog):
                 if arg in ['plot', 'plt']:
                     plot = True
                 elif arg in ['global', 'total']:
-                    self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
+                    self.bot.c.execute(f'SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}')
                     if self.bot.c.fetchone()[0] >= 7:
                         total = True
                 elif arg in ['active', 'online']:
@@ -43,16 +43,16 @@ class Leaderboard(commands.Cog):
                         pass
 
         if requestedDays > 365:
-            await ctx.send("You can't request more then 365 days.")
+            await ctx.send('You can\'t request more then 365 days.')
             return
         elif requestedDays < 0:
-            await ctx.send("You can't request less then one day.")
+            await ctx.send('You can\'t request less then one day.')
             return
         if top > 15:
-            await ctx.send("You can't request more then 15 positions.")
+            await ctx.send('You can\'t request more then 15 positions.')
             return
         elif top < 1:
-            await ctx.send("You can't request less then one position.")
+            await ctx.send('You can\'t request less then one position.')
             return
 
         if r_type == 1:

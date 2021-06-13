@@ -28,7 +28,7 @@ class Music(commands.Cog):
         if not ctx.guild:
             raise commands.NoPrivateMessage('This command can\'t be used in DM channels.')
 
-        self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = {ctx.guild.id}")
+        self.bot.c.execute(f'SELECT ReqRole FROM guilds WHERE GuildID = {ctx.guild.id}')
         reqRole = self.bot.c.fetchone()
         if reqRole and reqRole[0]:
             if not ctx.guild.get_role(reqRole[0]) in ctx.author.roles:
@@ -226,19 +226,13 @@ class Music(commands.Cog):
         async with ctx.typing():
             # Search own playlists
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
+                f'SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE \'%{playlist_name}%\' AND CreatorID = {ctx.author.id}')
             playlist_id = self.bot.c.fetchone()
             # If playlist not found in own playlists search for guilds playlists
             if not playlist_id:
-                self.bot.c.execute(f"SELECT PlaylistID FROM playlistsConnection WHERE GuildID = {ctx.guild.id}")
-                ids = self.bot.c.fetchall()
-                for id in ids:
-                    if id:
-                        self.bot.c.execute(
-                            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND PlaylistID = {id[0]}")
-                        playlist_id = self.bot.c.fetchone()
-                        if playlist_id and playlist_id[0]:
-                            break
+                self.bot.c.execute(
+                    f'SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE \'%{playlist_name}%\' AND PlaylistID IN (SELECT PlaylistID FROM playlistsConnection WHERE GuildID = {ctx.guild.id})')
+                playlist_id = self.bot.c.fetchone()
 
             if playlist_id:
                 ctx.voice_state.load_playlist(ctx.author, playlist_id[0])
@@ -250,20 +244,20 @@ class Music(commands.Cog):
     async def _saveplaylist(self, ctx: commands.Context, *, playlist_name: str):
         async with ctx.typing():
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
+                f'SELECT PlaylistID FROM playlists WHERE PlaylistName = \'{playlist_name}\' AND CreatorID = {ctx.author.id}')
             playlist_id = self.bot.c.fetchone()
             if playlist_id:
                 await ctx.send(f'You already have a playlist named **´{playlist_name}´**')
             else:
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlists (PlaylistName, CreatorID) VALUES ('{playlist_name}', {ctx.author.id})")
+                        f'INSERT INTO playlists (PlaylistName, CreatorID) VALUES (\'{playlist_name}\', {ctx.author.id})')
                 self.bot.c.execute(
-                    f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
+                    f'SELECT PlaylistID FROM playlists WHERE PlaylistName = \'{playlist_name}\' AND CreatorID = {ctx.author.id}')
                 playlist_id = self.bot.c.fetchone()[0]
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id}, {ctx.guild.id})")
+                        f'INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id}, {ctx.guild.id})')
                 ctx.voice_state.save_playlist(playlist_id)
                 await ctx.send(f'Successfully saved the current playlist as **`{playlist_name}`**')
 
@@ -272,17 +266,17 @@ class Music(commands.Cog):
         playlists = '\u200b'
         user_playlists = ''
         self.bot.c.execute(
-            f"SELECT PlaylistID, PlaylistName FROM playlists WHERE CreatorID = {ctx.author.id}")
+            f'SELECT PlaylistID, PlaylistName FROM playlists WHERE CreatorID = {ctx.author.id}')
         for playlist in self.bot.c.fetchall():
             user_playlists += f'- **`{playlist[1]}`**\n'
         if user_playlists:
             playlists += '\n**`Your playlists:`**\n' + user_playlists
 
         guild_playlists = ''
-        self.bot.c.execute(f"SELECT PlaylistID FROM playlistsConnection WHERE GuildID = '{ctx.guild.id}'")
+        self.bot.c.execute(f'SELECT PlaylistID FROM playlistsConnection WHERE GuildID = {ctx.guild.id}')
         for id in self.bot.c.fetchall():
             if id[0]:
-                self.bot.c.execute(f"SELECT PlaylistName, CreatorID FROM playlists WHERE PlaylistID = {id[0]}")
+                self.bot.c.execute(f'SELECT PlaylistName, CreatorID FROM playlists WHERE PlaylistID = {id[0]}')
                 playlist = self.bot.c.fetchone()
                 if playlists and playlists.find(playlist[0]) == -1:
                     guild_playlists += f'**`{playlist[0]}`** by '
@@ -305,14 +299,14 @@ class Music(commands.Cog):
     @commands.command(name='deletePlaylist', aliases=['dp', 'rmp'])
     async def _deletePlaylist(self, ctx, *, playlist_name):
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName = '{playlist_name}' AND CreatorID = {ctx.author.id}")
+            f'SELECT PlaylistID FROM playlists WHERE PlaylistName = \'{playlist_name}\' AND CreatorID = {ctx.author.id}')
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
-            if os.path.isfile(f"data/playlists/{playlist_id[0]}.p"):
-                os.remove(f"data/playlists/{playlist_id[0]}.p")
+            if os.path.isfile(f'data/playlists/{playlist_id[0]}.p'):
+                os.remove(f'data/playlists/{playlist_id[0]}.p')
             with self.bot.conn:
-                self.bot.c.execute(f"DELETE FROM playlists WHERE PlaylistID = {playlist_id[0]}")
-                self.bot.c.execute(f"DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]}")
+                self.bot.c.execute(f'DELETE FROM playlists WHERE PlaylistID = {playlist_id[0]}')
+                self.bot.c.execute(f'DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]}')
             await ctx.send(f'Successfully deleted **{playlist_name}**')
         else:
             await ctx.send('Couldn\'t find your playlist. Make sure you spelled the name right 🐸')
@@ -321,16 +315,16 @@ class Music(commands.Cog):
     async def _guildaddplaylist(self, ctx, *, playlist_name):
         # WARN An error occurred: Command raised an exception: IntegrityError: UNIQUE constraint failed: playlistsConnection.PlaylistID
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
+            f'SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE \'%{playlist_name}%\' AND CreatorID = {ctx.author.id}')
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
             self.bot.c.execute(
-                f"SELECT PlaylistID FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} AND GuildID = {ctx.guild.id}")
+                f'SELECT PlaylistID FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} AND GuildID = {ctx.guild.id}')
 
             if not self.bot.c.fetchone():
                 with self.bot.conn:
                     self.bot.c.execute(
-                        f"INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id[0]}, {ctx.guild.id})")
+                        f'INSERT INTO playlistsConnection (PlaylistID, GuildID) VALUES ({playlist_id[0]}, {ctx.guild.id})')
                 await ctx.send(f'Added **{playlist_name}** to this guild.')
             else:
                 await ctx.send(f'Playlist is already connected to this guild.')
@@ -340,12 +334,12 @@ class Music(commands.Cog):
     @commands.command(name='guildremoveplaylist', aliases=['grp'])
     async def _guildremoveplaylist(self, ctx, *, playlist_name):
         self.bot.c.execute(
-            f"SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE '%{playlist_name}%' AND CreatorID = {ctx.author.id}")
+            f'SELECT PlaylistID FROM playlists WHERE PlaylistName LIKE \'%{playlist_name}%\' AND CreatorID = {ctx.author.id}')
         playlist_id = self.bot.c.fetchone()
         if playlist_id:
             with self.bot.conn:
                 self.bot.c.execute(
-                    f"DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} and GuildID = {ctx.guild.id}")
+                    f'DELETE FROM playlistsConnection WHERE PlaylistID = {playlist_id[0]} and GuildID = {ctx.guild.id}')
             await ctx.send(f'Removed {playlist_name} from this guild.')
         else:
             await ctx.send('Couldn\'t find your playlist. Make sure you spelled the name right 🐸')
@@ -418,7 +412,7 @@ class Music(commands.Cog):
 
         if state and state.react_message_id == reaction.message.id:
             await reaction.message.remove_reaction(reaction.emoji, user)
-            self.bot.c.execute(f"SELECT ReqRole FROM guilds WHERE GuildID = {user.guild.id}")
+            self.bot.c.execute(f'SELECT ReqRole FROM guilds WHERE GuildID = {user.guild.id}')
             reqRole = self.bot.c.fetchone()
             if reqRole and reqRole[0] and user.guild.get_role(reqRole[0]) not in user.roles:
                 return

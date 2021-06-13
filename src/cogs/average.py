@@ -26,7 +26,7 @@ class Average(commands.Cog):
                     try:
                         requestedDays = int(arg)
                     except ValueError:
-                        self.bot.c.execute(f"SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}")
+                        self.bot.c.execute(f'SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}')
                         if self.bot.c.fetchone()[0] >= 7:
                             OtherUser = arg
         # Check if too many or little days are requested
@@ -44,7 +44,7 @@ class Average(commands.Cog):
                     userID = member.id
                     break
             else:
-                await ctx.send(f"User '{OtherUser}' not found.")
+                await ctx.send(f'User \'{OtherUser}\' not found.')
                 return
         else:
             username = f'{ctx.author.name}#{ctx.author.discriminator}'

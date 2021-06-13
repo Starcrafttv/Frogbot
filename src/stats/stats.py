@@ -4,16 +4,16 @@ from sqlite3 import Cursor
 
 def get_last_days(c: Cursor, userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
     # Get the timezone from the user id
-    c.execute(f"SELECT Timezone FROM users WHERE UserID = {userID}")
+    c.execute(f'SELECT Timezone FROM users WHERE UserID = {userID}')
     timezone = c.fetchone()[0]
     # Create a string if a guild is specified
-    GuildString = f" AND GuildID = '{guildID}'" if guildID else ""
+    GuildString = f' AND GuildID = \'{guildID}\'' if guildID else ''
     # Get all information about the user
-    c.execute(f"SELECT Start, Stop FROM discordActive WHERE UserID = {userID}" + GuildString)
+    c.execute(f'SELECT Start, Stop FROM discordActive WHERE UserID = {userID}' + GuildString)
     active = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f"SELECT Start, Stop FROM discordAfk WHERE UserID = {userID}" + GuildString)
+    c.execute(f'SELECT Start, Stop FROM discordAfk WHERE UserID = {userID}' + GuildString)
     afk = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f"SELECT Send FROM discordMessages WHERE UserID = {userID}" + GuildString)
+    c.execute(f'SELECT Send FROM discordMessages WHERE UserID = {userID}' + GuildString)
     messages = [entry[0]+(timezone*3600) for entry in c.fetchall()]
     if raw:
         return [username, timezone, requestedDays, active, afk, messages]

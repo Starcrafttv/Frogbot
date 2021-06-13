@@ -52,7 +52,7 @@ async def _bot(ctx, arg=''):
     # Turn off the bot
     if arg.lower() == 'off':
         print('Shutdown initiated')
-        bot.logger.critical(f"'{ctx.author.name}#{ctx.author.discriminator}' initiated shutdown")
+        bot.logger.critical(f'\'{ctx.author.name}#{ctx.author.discriminator}\' initiated shutdown')
         await ctx.send('Going to sleep :zzz:')
         # Unload all loaded cogs
         for extension in bot.loadedCogs:
