@@ -57,5 +57,6 @@
         "ytick",
         "yticks",
         "zm"
-    ]
+    ],
+    "python.pythonPath": "C:\\Users\\Niklas Mohler\\.conda\\envs\\frogbot\\python.exe"
 }

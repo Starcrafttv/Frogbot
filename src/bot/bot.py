@@ -16,17 +16,17 @@ class Bot(commands.Bot):
     def __init__(self):
         self.start_time = time()
         self.date = str(datetime.utcnow().date())
-        self.description = config.description
-        self.loaded_cogs = []
-        self.logo_url = config.logo_url
+        self.description: str = config.description
+        self.loaded_cogs: list[str] = []
+        self.logo_url: str = config.logo_url
         self.mainGuildId = config.mainGuildId
         # dm system config
-        self.support_category_id = config.support_category_id
-        self.support_log_channel_id = config.support_log_channel_id
-        self.support_role_id = config.support_role_id
+        self.support_category_id: int = config.support_category_id
+        self.support_log_channel_id: int = config.support_log_channel_id
+        self.support_role_id: int = config.support_role_id
         # Recorder dicts
-        self.users_afk = {}
-        self.users_active = {}
+        self.users_afk: dict[int, Afk] = {}
+        self.users_active: dict[int, Active] = {}
         # Connect to the database
         self.database_location = config.database_location
         self.conn = sqlite3.connect(self.database_location)
@@ -74,7 +74,12 @@ class Bot(commands.Bot):
                 self.loadCog(extension)
             except Exception as e:
                 print(e)
-        print(f'{self.user}, {round(time() - self.start_time, 3)}, is ready to go')
+
+        print(f'\nStartup {round(time() - self.start_time, 3)} seconds\n'
+              f'{datetime.utcnow().strftime("%d.%m.%Y %H:%M:%S")}\n'
+              f'\nLOGGED IN AS\n'
+              f'Username: \'{self.user.name}#{self.user.discriminator}\'\n'
+              f'ID: \'{self.user.id}\'\n')
         self.logger.info(
             f'Started {self.user.name}#{self.user.discriminator}, ID = {self.user.id} in {round(time() - self.start_time, 3)} seconds')
 

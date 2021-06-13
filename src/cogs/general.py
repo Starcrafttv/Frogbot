@@ -28,8 +28,11 @@ class General(commands.Cog):
         embed.add_field(name=f'**`{prefix}music`**',
                         value='Shows all available music commands',
                         inline=False)
+        embed.add_field(name=f'**`{prefix}playlists`**',
+                        value='Shows all available music commands',
+                        inline=False)
         embed.add_field(name=f'**`{prefix}stats <days> <plot> <raw> <total>`**',
-                        value='Displays your stats over the selected last days.',
+                        value='Displays your stats over the selected last days',
                         inline=False)
         embed.add_field(name=f'**`{prefix}leaderboard <positions> <plot> <last_days=days> <active/afk>`**',
                         value='Creates a leaderboard for the current discord server.',
@@ -46,7 +49,7 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='music')
-    async def music(self, ctx: commands.Context, arg: str = ''):
+    async def music(self, ctx: commands.Context, *, arg: str = ''):
         if ctx.author.bot and not ctx.guild:
             return
 
@@ -84,6 +87,39 @@ class General(commands.Cog):
                         inline=False)
         embed.add_field(name=f'**`{prefix}loopsong/loopqueue`**',
                         value='Toggles looping for the current Song/the whole queue.',
+                        inline=False)
+        await ctx.send(embed=embed)
+
+    @commands.command(name='playlists')
+    async def playlists(self, ctx: commands.Context, *, arg: str = ''):
+        if ctx.author.bot and not ctx.guild:
+            return
+
+        self.bot.c.execute(f"SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}")
+        prefix = self.bot.c.fetchone()[0]
+
+        embed = Embed(title=':book: A list of all playlist commands:',
+                      description='All playlists are user specific but can be added to guilds for other people to use.',
+                      inline=False,
+                      colour=Colour.blue())
+        embed.set_thumbnail(url=self.bot.logo_url)
+        embed.add_field(name=f'**`{prefix}allplaylists`**',
+                        value='Shows you all playlists available to you',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}loadplaylist <playlist_name>`**',
+                        value='Loads a saved playlist into the queue',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}saveplaylist <playlist_name>`**',
+                        value='Saves all songs in the current queue',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}guildaddplaylist <playlist_name>`**',
+                        value='Adds a playlist to a guild (you have to the playlist creator)',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}guildremoveplaylist <playlist_name>`**',
+                        value='Removes a playlist from a guild.',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}deleteplaylist <playlist_name>`**',
+                        value='Deletes a saved playlist (you have to the playlist creator)',
                         inline=False)
         await ctx.send(embed=embed)
 

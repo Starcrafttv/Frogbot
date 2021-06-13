@@ -10,7 +10,7 @@ sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
     __tokens__['spotify_client'], __tokens__['spotify']))
 
 
-def get_songs(requester: User, query: str) -> list:
+def get_songs(requester: User, query: str) -> list[Song]:
     # Youtube
     if query.find('youtube') != -1:
         # Playlist
@@ -35,7 +35,7 @@ def get_songs(requester: User, query: str) -> list:
     return search_youtube_video(requester, query)
 
 
-def get_youtube_playlist(requester: User, id: str) -> list:
+def get_youtube_playlist(requester: User, id: str) -> list[Song]:
     playlist = []
     response = {'nextPageToken': None}
     # Go through each playlist page and extract all videos in it
@@ -60,7 +60,7 @@ def get_youtube_playlist(requester: User, id: str) -> list:
     return playlist
 
 
-def get_youtube_video(requester: User, ids: list) -> list:
+def get_youtube_video(requester: User, ids: list) -> list[Song]:
     videos = []
     if ids:
         id_string = ''
@@ -79,7 +79,7 @@ def get_youtube_video(requester: User, ids: list) -> list:
     return videos
 
 
-def search_youtube_video(requester: User, query: str, max_results: int = 1) -> list:
+def search_youtube_video(requester: User, query: str, max_results: int = 1) -> list[Song]:
     ids = []
     if query:
         request = youtube.search().list(
@@ -97,7 +97,7 @@ def search_youtube_video(requester: User, query: str, max_results: int = 1) -> l
     return []
 
 
-def getSpotifyPlaylist(requester: User, id: str) -> list:
+def getSpotifyPlaylist(requester: User, id: str) -> list[Song]:
     track_names = []
     for meta in sp.playlist(id)['tracks']['items']:
         track_names.append(f'{meta["name"]} {meta["album"]["artists"][0]["name"]}')
@@ -105,7 +105,7 @@ def getSpotifyPlaylist(requester: User, id: str) -> list:
     return []
 
 
-def getSpotifyTrack(requester: User, id: str) -> list:
+def getSpotifyTrack(requester: User, id: str) -> list[Song]:
     meta = sp.track(id)
     trackName = f'{meta["name"]} {meta["album"]["artists"][0]["name"]}'
     return search_youtube_video(requester, trackName)

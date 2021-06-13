@@ -8,7 +8,7 @@ This Discord bot logs some interesting information about users in your guild. A 
 
 If you have any other trouble with the bot or ideas for improvement just direct message the bot and our mod team will respond as soon as possible.
 
-You can invite the bot to your discord server [here](https://discord.com/oauth2/authorize?client_id=840862571102994452&scope=bot&permissions=8) or if you need additional support you can join this discord server [here](https://discord.gg/VUqdtHtHqc).
+You can invite the bot to your discord server [here](https://discord.com/oauth2/authorize?client_id=840862571102994452&scope=bot&permissions=37088320) or if you need additional support you can join this discord server [here](https://discord.gg/VUqdtHtHqc).
 
 ## Commands:
 

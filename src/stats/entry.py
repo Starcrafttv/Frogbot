@@ -1,3 +1,4 @@
+from sqlite3 import Connection, Cursor
 from time import time
 
 from discord import Guild
@@ -14,7 +15,7 @@ class Active():
     def setStart(self):
         self.__start = time()
 
-    def save(self, conn, c):
+    def save(self, conn: Connection, c: Cursor):
         self.__stop = time()
         with conn:
             c.execute(
@@ -32,7 +33,7 @@ class Afk():
     def setStart(self):
         self.__start = time()
 
-    def save(self, conn, c):
+    def save(self, conn: Connection, c: Cursor):
         self.__stop = time()
         with conn:
             c.execute(

@@ -24,24 +24,24 @@ YTDL_OPTIONS = {
 
 class Song():
     def __init__(self, requester: discord.User, data: dict) -> None:
-        self.requester_name = f'{requester.name}#{requester.discriminator}'
-        self.requester_id = requester.id
+        self.requester_name: str = f'{requester.name}#{requester.discriminator}'
+        self.requester_id: int = requester.id
 
-        self.id = data.get('id')
+        self.id: str = data.get('id')
         snippet = data.get('snippet')
         date = snippet.get('publishedAt')
-        self.url = f'http://www.youtube.com/watch?v={self.id}'
-        self.upload_date = date[6:8] + '.' + date[4:6] + '.' + date[0:4]
-        self.channel_id = snippet.get('channelId')
-        self.channel_title = snippet.get('channelTitle')
+        self.url: str = f'https://www.youtube.com/watch?v={self.id}'
+        self.upload_date: str = date[6:8] + '.' + date[4:6] + '.' + date[0:4]
+        self.channel_id: str = snippet.get('channelId')
+        self.channel_title: str = snippet.get('channelTitle')
         self.title = snippet.get('title')
-        self.description = snippet.get('description')
-        self.published_at = snippet.get('publishedAt')
+        self.description: str = snippet.get('description')
+        self.published_at: str = snippet.get('publishedAt')
         content_details = data.get('contentDetails')
-        self.duration = self._yt_duration_to_seconds(content_details.get('duration'))
-        self.duration_str = sec_to_time(self.duration)
+        self.duration: int = self._yt_duration_to_seconds(content_details.get('duration'))
+        self.duration_str: str = sec_to_time(self.duration)
         thumbnails = snippet.get('thumbnails')
-        self.thumbnail_url = thumbnails[list(thumbnails.keys())[-1]]['url']
+        self.thumbnail_url: str = thumbnails[list(thumbnails.keys())[-1]]['url']
 
     def create_embed(self) -> Embed:
         embed = (Embed(title=':musical_note: Now playing:',

@@ -5,3 +5,4 @@ data/database.db
 *.zip
 *.pyc
 .vscode/settings.json
+.vscode/settings.json

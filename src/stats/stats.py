@@ -1,7 +1,8 @@
 import datetime
+from sqlite3 import Cursor
 
 
-def get_last_days(c, userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
+def get_last_days(c: Cursor, userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
     # Get the timezone from the user id
     c.execute(f"SELECT Timezone FROM users WHERE UserID = {userID}")
     timezone = c.fetchone()[0]

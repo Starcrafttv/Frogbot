@@ -4,6 +4,7 @@ import src.music.search as search
 from discord import ChannelType, Colour, Embed, Message, Reaction, User
 from discord.ext import commands
 from src.bot.bot import Bot
+from src.music.song import Song
 from src.music.voicestate import VoiceState
 
 
@@ -109,7 +110,7 @@ class Music(commands.Cog):
                 ctx.voice_state.skip()
                 await self.play_command_message(ctx, songs)
 
-    async def play_command_message(self, ctx: commands.Context, songs: list):
+    async def play_command_message(self, ctx: commands.Context, songs: list[Song]):
         if len(songs) == 1:
             embed = Embed(
                 title=f'Added song to queue:',
