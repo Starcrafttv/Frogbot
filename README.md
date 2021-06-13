@@ -35,7 +35,14 @@ Example leaderboard with the `plot` specification:
 ![example_leaderboard](https://i.ibb.co/HVw22FM/example-leaderboard.png)
 
 ## About the code:
-This bot is coded in python. The data is stored in a database with sqlite. Every type of command is separated in a different cog. If you want to run this bot you need a `__tokens__.py` file under `src/bot/`. This file should look like this:
+This bot is coded in python. The data is stored in a database with sqlite. Every type of command is separated in a different cog. 
+
+I also did not upload the full database because it contains personal data of users. The bot has a log file under `data/bot.log` and automatically creates backups under `data/backup/` with the data as the name.
+
+There are a lot of other fun features one can find in my code.
+
+## Run this bot:
+You need to add your own API keys to the `__token__.py` file under `src/bot/`. This should look like this:
 ```python
 __tokens__ = {
     'bot': '',
@@ -45,31 +52,14 @@ __tokens__ = {
     'lol': ''
 }
 ```
-You can get all of these api keys for free.
-
-I also did not upload the full database because it contains personal data of users. There is a `transfer.py` under `tests/` that creates a fresh database for you.The bot has a log file under `data/bot.log` and automatically creates backups under `data/backup/` with the data as the name.
-
-I added some features only the owner of the bot can use. There also is a dm system that needs to be adjusted to your own server if you want to run the bot. With this users can dm the bot and you can answer them over a channel the bot created.
-
-There are a lot of other features one can find in my code.
-
-## List of requirements:
-- `python`>= 3.8.5
-
-- `discord.py`
-- `matplotlib`
-- `emoji` (used so matplotlib can work with emojis in usernames)
-- `pynacl`
-- `youtube_dl`
-- `spotipy`
-- `google-api-python-client`
-- `google-auth-httplib2`
-- `google-auth-oauthlib`
-- `cassiopeia` (currently working on a new cog for League of Legends stats)
+After that you need to create a database with `create_database.py` file under `tests` and move the created database in the `data/` directory.
+More configs can be found in the `config.py` file under `data/` and thats it.
+There is a setup.sh file that prepares everything and starts the bot. 
 
 
 Please excuse any weird spelling or grammar, I am german...
 
-Copyright © 2021 Niklas Mohler - All rights reserved
 
-![Frogbot logo](https://i.ibb.co/NK4tkyf/Frog-Logonew.png)
+![Frogbot logo](https://i.ibb.co/SXQPW9c/logo-512.png)
+
+Copyright © 2021 Niklas Mohler - All rights reserved
