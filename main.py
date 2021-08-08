@@ -13,7 +13,7 @@ def main():
 @commands.is_owner()
 async def _cog_load(ctx, *, cog: str):
     # Command which Loads a Module.
-    response = bot.loadCog(cog)
+    response = await bot.loadCog(cog)
     if response:
         await ctx.send(f'**`ERROR:`** {type(response).__name__} - {response}')
     else:
@@ -22,9 +22,9 @@ async def _cog_load(ctx, *, cog: str):
 
 @bot.command(name='unload', hidden=True)
 @commands.is_owner()
-async def _cog_unload(ctx, *, cog: str):
+async def _cog_unload(ctx: commands.Context, *, cog: str):
     # Command which Loads a Module.
-    response = bot.removeCog(cog)
+    response = await bot.removeCog(cog)
     if response:
         await ctx.send(f'**`ERROR:`** {type(response).__name__} - {response}')
     else:
@@ -35,11 +35,11 @@ async def _cog_unload(ctx, *, cog: str):
 @commands.is_owner()
 async def _cog_reload(ctx, *, cog: str):
     # Command which Loads a Module.
-    response = bot.removeCog(cog)
+    response = await bot.removeCog(cog)
     if response:
         await ctx.send(f'**`ERROR:`** {type(response).__name__} - {response}')
     else:
-        response = bot.loadCog(cog)
+        response = await bot.loadCog(cog)
         if response:
             await ctx.send(f'**`ERROR:`** {type(response).__name__} - {response}')
         else:
@@ -56,7 +56,7 @@ async def _bot(ctx, arg=''):
         await ctx.send('Going to sleep :zzz:')
         # Unload all loaded cogs
         for extension in bot.loadedCogs:
-            response = bot.removeCog(extension)
+            response = await bot.removeCog(extension)
             if response:
                 bot.logger.exception(f'_bot - {response}')
         await bot.logout()

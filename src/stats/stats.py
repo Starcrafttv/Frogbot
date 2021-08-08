@@ -1,20 +1,53 @@
 import datetime
-from sqlite3 import Cursor
+
+import data.config as config
+import requests
+from src.bot.__tokens__ import __tokens__
 
 
-def get_last_days(c: Cursor, userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
+async def get_last_days(userID: int, username: str, requestedDays: int, guildID: int, raw=False) -> list:
     # Get the timezone from the user id
-    c.execute(f'SELECT Timezone FROM users WHERE UserID = {userID}')
-    timezone = c.fetchone()[0]
-    # Create a string if a guild is specified
-    GuildString = f' AND GuildID = \'{guildID}\'' if guildID else ''
+    response = requests.get(f'{config.base_api_url}discord/user/',
+                            params={'id': userID}, headers={'token': __tokens__['frogbot_api']}).json()
+    timezone = response['items'][0]['timezone'] if response.get('items') else 0
     # Get all information about the user
-    c.execute(f'SELECT Start, Stop FROM discordActive WHERE UserID = {userID}' + GuildString)
-    active = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f'SELECT Start, Stop FROM discordAfk WHERE UserID = {userID}' + GuildString)
-    afk = [[entry[0]+(timezone*3600), entry[1]-entry[0]] for entry in c.fetchall()]
-    c.execute(f'SELECT Send FROM discordMessages WHERE UserID = {userID}' + GuildString)
-    messages = [entry[0]+(timezone*3600) for entry in c.fetchall()]
+    header = {'token': __tokens__['frogbot_api']}
+    params = {'userId': userID}
+    if guildID:
+        params['guildId'] = guildID
+    active = [
+        [entry['start'] + (timezone * 3600), entry['stop'] - entry['start']]
+        for entry in requests.get(
+            f'{config.base_api_url}discord/active/',
+            params=params,
+            headers=header,
+        )
+        .json()
+        .get('items', [])
+    ]
+
+    afk = [
+        [entry['start'] + (timezone * 3600), entry['stop'] - entry['start']]
+        for entry in requests.get(
+            f'{config.base_api_url}discord/afk/',
+            params=params,
+            headers=header,
+        )
+        .json()
+        .get('items', [])
+    ]
+
+    messages = [
+        entry['sent'] + (timezone * 3600)
+        for entry in requests.get(
+            f'{config.base_api_url}discord/message/',
+            params=params,
+            headers=header,
+        )
+        .json()
+        .get('items', [])
+    ]
+
     if raw:
         return [username, timezone, requestedDays, active, afk, messages]
     # Create the return list and calculate the stats for each day

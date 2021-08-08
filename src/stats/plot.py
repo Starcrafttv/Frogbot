@@ -9,8 +9,10 @@ plt.rcParams['ytick.color'] = '#ffffff'
 plt.rcParams['text.color'] = '#ffffff'
 plt.rcParams['axes.edgecolor'] = '#ffffff'
 
+# TODO alternative for smart_bounds function
 
-def get_stats(stats: list) -> bool:
+
+async def get_stats(stats: list) -> bool:
     try:
         days = []
         active = []
@@ -37,8 +39,8 @@ def get_stats(stats: list) -> bool:
         ax.bar([i + 0.2 for i in x], afk, width=0.4, alpha=0.8,
                align='center', color='orange', zorder=3, label='Afk')
         plt.grid(color='#2C2F33', linestyle=':', linewidth=1, axis='y', zorder=1)
-        ax.spines['left'].set_smart_bounds(True)
-        ax.spines['bottom'].set_smart_bounds(True)
+        # ax.spines['left'].set_smart_bounds(True)
+        # ax.spines['bottom'].set_smart_bounds(True)
         # Set the x-axis to the dates and not show all to avoid overlaying
         plt.xticks(x, days, rotation=40, ha='right')
         [l.set_visible(False) for (i, l) in enumerate(reversed(ax.xaxis.get_ticklabels())) if i % n != 0]
@@ -52,12 +54,13 @@ def get_stats(stats: list) -> bool:
         # Save the plot in a png
         plt.savefig('data/temp/stats.png', dpi=300, facecolor=fig.get_facecolor())
         return True
-    except Exception:
+    except Exception as e:
         # If something goes wrong exit with False
+        print(e)
         return False
 
 
-def get_raw_stats(username: str, timezone: int, last_days, active: list, afk: list) -> bool:
+async def get_raw_stats(username: str, timezone: int, last_days, active: list, afk: list) -> bool:
     try:
         dates = []
         xticks = []
@@ -76,32 +79,10 @@ def get_raw_stats(username: str, timezone: int, last_days, active: list, afk: li
         ax.spines['right'].set_color('none')
         ax.spines['left'].set_color('none')
         x = [i for i in range(last_days)]
-        # Add every entry as a bar
 
-        for entry in active:
-            time = datetime.utcfromtimestamp(entry[0])
-            for i in range(len(dates)):
-                if entry[1] > 60 and str(time.date()) == dates[i]:
-                    ax.bar(
-                        i,
-                        entry[1]/3600,
-                        bottom=time.hour + (time.minute / 60) + (time.second / 3600),
-                        width=0.5,
-                        facecolor='#7289DA',
-                        zorder=4)
-                    break
-        for entry in afk:
-            time = datetime.utcfromtimestamp(entry[0])
-            for i in range(len(dates)):
-                if entry[1] > 60 and str(time.date()) == dates[i]:
-                    ax.bar(
-                        i,
-                        entry[1]/3600,
-                        bottom=time.hour + (time.minute / 60) + (time.second / 3600),
-                        width=0.5,
-                        facecolor='#b9bbbe',
-                        zorder=3)
-                    break
+        ax = await add_plot_points(ax, active, dates, '#7289DA')
+        ax = await add_plot_points(ax, afk, dates, '#b9bbbe')
+
         plt.grid(color='#2C2F33', linestyle=':', linewidth=1, axis='both', zorder=1)
         plt.xticks(x, xticks, rotation=40, ha='right')
         n = (len(dates) + 10) // 10
@@ -122,7 +103,22 @@ def get_raw_stats(username: str, timezone: int, last_days, active: list, afk: li
         return False
 
 
-def get_leaderboard(usernames: str, total_stats: list, top: int, time_type: bool, description: str) -> bool:
+async def add_plot_points(ax, entries, dates, facecolor, zorder=3):
+    for entry in entries:
+        time = datetime.utcfromtimestamp(entry[0])
+        for i in range(len(dates)):
+            if entry[1] > 60 and str(time.date()) == dates[i]:
+                ax.bar(
+                    i,
+                    entry[1]/3600,
+                    bottom=time.hour + (time.minute / 60) + (time.second / 3600),
+                    width=0.5,
+                    facecolor=facecolor,
+                    zorder=zorder)
+    return ax
+
+
+async def get_leaderboard(usernames: str, total_stats: list, top: int, time_type: bool, description: str) -> bool:
     try:
         # Setup a new graph
         plt.clf()
@@ -138,8 +134,8 @@ def get_leaderboard(usernames: str, total_stats: list, top: int, time_type: bool
         plt.plot(total_stats, [demojize(name) for name in usernames], 'o',
                  markersize=70 / top, color='#7289DA', alpha=1, zorder=3)
         plt.grid(color='#2C2F33', linestyle=':', linewidth=1, axis='x', zorder=1)
-        ax.spines['left'].set_smart_bounds(True)
-        ax.spines['bottom'].set_smart_bounds(True)
+        # ax.spines['left'].set_smart_bounds(True)
+        # ax.spines['bottom'].set_smart_bounds(True)
         ax.spines['bottom'].set_position(('axes', -0.03))
         ax.tick_params(axis='x', which='major', labelsize=12)
         ax.tick_params(axis='y', which='major', labelsize=70 / top)
@@ -153,7 +149,7 @@ def get_leaderboard(usernames: str, total_stats: list, top: int, time_type: bool
         return False
 
 
-def get_compare(users: list, user_stats, days, r_type: int) -> bool:
+async def get_compare(users: list, user_stats, days, r_type: int) -> bool:
     try:
         plt.clf()
         width = 0.4
@@ -179,8 +175,8 @@ def get_compare(users: list, user_stats, days, r_type: int) -> bool:
             ax.bar([j + pos[i] for j in x], user_stats[i], width=width,
                    align='center', color=colors[i], zorder=3, label=demojize(user))
         plt.grid(color='#2C2F33', linestyle=':', linewidth=1, axis='y', zorder=1)
-        ax.spines['left'].set_smart_bounds(True)
-        ax.spines['bottom'].set_smart_bounds(True)
+        # ax.spines['left'].set_smart_bounds(True)
+        # ax.spines['bottom'].set_smart_bounds(True)
         ax.spines['top'].set_color('none')
         ax.spines['right'].set_color('none')
         ax.spines['left'].set_color('none')

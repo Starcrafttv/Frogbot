@@ -1,3 +1,4 @@
+import requests
 from discord import Colour, Embed, File
 from discord.ext import commands
 from src.bot.bot import Bot
@@ -16,7 +17,7 @@ class Leaderboard(commands.Cog):
         if ctx.author.bot:
             return
         top = 5
-        requestedDays = 0
+        requested_days = 0
         total = False
         plot = False
         time_type = True
@@ -27,8 +28,9 @@ class Leaderboard(commands.Cog):
                 if arg in ['plot', 'plt']:
                     plot = True
                 elif arg in ['global', 'total']:
-                    self.bot.c.execute(f'SELECT UserPrivileges FROM users WHERE UserID = {ctx.author.id}')
-                    if self.bot.c.fetchone()[0] >= 7:
+                    response = requests.get(f'{self.bot.base_api_url}discord/user/',
+                                            params={'id': ctx.author.id}, headers=self.bot.header).json()
+                    if response.get('items') and response['items'][0]['privileges'] >= 7:
                         total = True
                 elif arg in ['active', 'online']:
                     r_type = 1
@@ -38,14 +40,14 @@ class Leaderboard(commands.Cog):
                     r_type = 3
                 elif arg.strip('01234567890') in ['last=', 'days='] and len(arg) > 4:
                     try:
-                        requestedDays = int(arg[5:])
+                        requested_days = int(arg[5:])
                     except ValueError:
                         pass
 
-        if requestedDays > 365:
+        if requested_days > 365:
             await ctx.send('You can\'t request more then 365 days.')
             return
-        elif requestedDays < 0:
+        elif requested_days < 0:
             await ctx.send('You can\'t request less then one day.')
             return
         if top > 15:
@@ -56,28 +58,27 @@ class Leaderboard(commands.Cog):
             return
 
         if r_type == 1:
-            description = f'Active time for the last {requestedDays} days' if requestedDays else 'Total active time'
+            description = f'Active time for the last {requested_days} days' if requested_days else 'Total active time'
             value = 'Active time: '
         elif r_type == 2:
-            description = f'Afk time for the last {requestedDays} days' if requestedDays else 'Total afk time'
+            description = f'Afk time for the last {requested_days} days' if requested_days else 'Total afk time'
             value = 'Afk time: '
         else:
-            description = f'Messages sent for the last {requestedDays} days' if requestedDays else 'Total messages sent'
+            description = f'Messages sent for the last {requested_days} days' if requested_days else 'Total messages sent'
             value = 'Messages: '
             time_type = False
 
         leaderboard = []
         for member in ctx.guild.members:
             if not member.bot:
-                stats = get_last_days(
-                    self.bot.c, member.id, f'{member.name}#{member.discriminator}', requestedDays, ctx.guild.id
-                    if not total else False)
+                stats = await get_last_days(member.id, f'{member.name}#{member.discriminator}', requested_days, ctx.guild.id
+                                            if not total else False)
                 leaderboard.append([stats[0][1], sum(day[r_type]
-                                                     for day in stats[1:]) if requestedDays else stats[0][r_type+1]])
+                                                     for day in stats[1:]) if requested_days else stats[0][r_type+1]])
         leaderboard = sorted(leaderboard, key=lambda user: user[1], reverse=True)[:top]
 
         if plot:
-            if get_leaderboard(
+            if await get_leaderboard(
                 [user[0] for user in reversed(leaderboard)],
                 [round(user[1]/86400, 3) for user in reversed(leaderboard)],
                     top, time_type, description):
@@ -89,6 +90,6 @@ class Leaderboard(commands.Cog):
                           colour=Colour.blue())
             for user in leaderboard:
                 embed.add_field(name=user[0],
-                                value=value + str(sec_to_time(user[1])) if time_type else str(user[1]),
+                                value=value + str(await sec_to_time(user[1])) if time_type else str(user[1]),
                                 inline=False)
             await ctx.send(embed=embed)

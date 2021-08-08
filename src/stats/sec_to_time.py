@@ -1,5 +1,5 @@
 # Convert seconds to a normalized string hh:mm:ss
-def sec_to_time(sec: int) -> str:
+async def sec_to_time(sec: int) -> str:
     m, s = divmod(round(sec), 60)
     h, m = divmod(m, 60)
     d, h = divmod(h, 24)

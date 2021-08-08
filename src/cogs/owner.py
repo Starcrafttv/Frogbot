@@ -1,3 +1,4 @@
+import requests
 from discord.ext import commands
 from src.bot.bot import Bot
 
@@ -12,12 +13,12 @@ class Owner(commands.Cog):
         # Change a users rights or guilds rights
         arg = arg.lower().strip(' <>!@')
         if arg in ['userrights', 'u_permissions', 'u_p']:
-            with self.bot.conn:
-                self.bot.c.execute(f'UPDATE users SET UserPrivileges = {rights} WHERE UserID = {id}')
+            requests.patch(f'{self.bot.base_api_url}discord/user/',
+                           params={'id': ctx.guild.id, 'privileges': rights}, headers=self.bot.header)
             await ctx.send(f'Set  user privileges level for {id} to {rights}')
         elif arg in ['guildrights', 'g_permissions', 'g_p']:
-            with self.bot.conn:
-                self.bot.c.execute(f'UPDATE guilds SET GuildPrivileges = {rights} WHERE GuildID = {id}')
+            requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                           params={'id': ctx.guild.id, 'privileges': rights}, headers=self.bot.header)
             await ctx.send(f'Set guild privileges for {id} to {rights}')
 
     @commands.command(name='setStatus', hidden=True)

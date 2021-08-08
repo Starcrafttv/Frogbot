@@ -43,15 +43,14 @@ class Song():
         thumbnails = snippet.get('thumbnails')
         self.thumbnail_url: str = thumbnails[list(thumbnails.keys())[-1]]['url']
 
-    def create_embed(self) -> Embed:
-        embed = (Embed(title=':musical_note: Now playing:',
-                       description=f'[{self.title}]({self.url})',
-                       color=Colour.blurple())
-                 .add_field(name='Requested by', value=self.requester_name)
-                 .add_field(name='Duration', value=self.duration_str)
-                 .add_field(name='Creator', value=self.channel_title)
-                 .set_thumbnail(url=self.thumbnail_url))
-        return embed
+    async def create_embed(self) -> Embed:
+        return (Embed(title=':musical_note: Now playing:',
+                      description=f'[{self.title}]({self.url})',
+                      color=Colour.blurple())
+                .add_field(name='Requested by', value=self.requester_name)
+                .add_field(name='Duration', value=self.duration_str)
+                .add_field(name='Creator', value=self.channel_title)
+                .set_thumbnail(url=self.thumbnail_url))
 
     async def get_mp3_url(self) -> str:
         try:
@@ -62,9 +61,12 @@ class Song():
             return ''
 
     def _yt_duration_to_seconds(self, duration: str) -> int:
-        match = re.match('PT(\d+H)?(\d+M)?(\d+S)?', duration).groups()
+        try:
+            match = re.match('PT(\d+H)?(\d+M)?(\d+S)?', duration).groups()
 
-        seconds = int(match[2].strip('S')) if match[2] else 0
-        minutes = int(match[1].strip('M')) if match[1] else 0
-        hours = int(match[0].strip('H')) if match[0] else 0
-        return seconds + 60 * minutes + 3600 * hours
+            seconds = int(match[2].strip('S')) if match[2] else 0
+            minutes = int(match[1].strip('M')) if match[1] else 0
+            hours = int(match[0].strip('H')) if match[0] else 0
+            return seconds + 60 * minutes + 3600 * hours
+        except AttributeError:
+            return 0

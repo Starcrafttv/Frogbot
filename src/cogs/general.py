@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
-from discord import Colour, Embed, Message
+import requests
+from discord import ChannelType, Colour, Embed, Message
 from discord.ext import commands
 from src.bot.bot import Bot
 
@@ -15,8 +16,9 @@ class General(commands.Cog):
             return
 
         if ctx.guild:
-            self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
-            prefix = self.bot.c.fetchone()[0]
+            response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                    params={'id': ctx.guild.id}, headers=self.bot.header).json()
+            prefix = response['items'][0]['prefix'] if response.get('items') else '!'
         else:
             prefix = '!'
 
@@ -53,9 +55,9 @@ class General(commands.Cog):
         if ctx.author.bot and not ctx.guild:
             return
 
-        self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
-        prefix = self.bot.c.fetchone()[0]
-
+        response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                params={'id': ctx.guild.id}, headers=self.bot.header).json()
+        prefix = response['items'][0]['prefix'] if response.get('items') else '!'
         embed = Embed(title=':book: A list of all music commands:',
                       description='‎‎\u200b',
                       inline=False,
@@ -95,9 +97,9 @@ class General(commands.Cog):
         if ctx.author.bot and not ctx.guild:
             return
 
-        self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
-        prefix = self.bot.c.fetchone()[0]
-
+        response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                params={'id': ctx.guild.id}, headers=self.bot.header).json()
+        prefix = response['items'][0]['prefix'] if response.get('items') else '!'
         embed = Embed(title=':book: A list of all playlist commands:',
                       description='All playlists are user specific but can be added to guilds for other people to use.',
                       inline=False,
@@ -134,20 +136,23 @@ class General(commands.Cog):
 
     @commands.command(name='timezone', aliases=['tz'])
     async def timezone(self, ctx: commands.Context, *, timezone=None):
-        if timezone == None:
-            self.bot.c.execute(f'SELECT Timezone FROM users WHERE UserID = {ctx.author.id}')
-            await ctx.send(f':clock9: Your current timezone should be {(datetime.utcnow() + timedelta(hours=self.bot.c.fetchone()[0])).strftime("%H:%M")} o\'clock for you.')
+        if timezone is None:
+
+            response = requests.get(f'{self.bot.base_api_url}discord/user/',
+                                    params={'id': ctx.author.id}, headers=self.bot.header).json()
+            timezone = response['items'][0]['timezone'] if response.get('items') else 0
+            await ctx.send(f':clock9: Your current timezone should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
             return
         try:
             timezone = int(timezone)
             if timezone < -12 or timezone > 12:
                 await ctx.send('Your timezone must be between -12 and 12')
-                return
             else:
-                with self.bot.conn:
-                    self.bot.c.execute(f'UPDATE users SET Timezone = {timezone} WHERE UserID = {ctx.author.id}')
+                requests.patch(f'{self.bot.base_api_url}discord/user/',
+                               params={'id': ctx.author.id, 'timezone': timezone}, headers=self.bot.header)
+
                 await ctx.send(f':clock9: Successfully updated your timezone. It should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
-                return
+            return
         except ValueError:
             return
 
@@ -158,9 +163,10 @@ class General(commands.Cog):
         args = [arg.lower().replace("'", '`') for arg in args.split(' ')]
         if args[0] in ['prefix']:
             if len(args) > 1 and args[1] and len(args[1]) < 6:
-                with self.bot.conn:
-                    self.bot.c.execute(f'UPDATE guilds SET Prefix = \'{args[1]}\' WHERE GuildID = {ctx.guild.id}')
-                    await ctx.send(f':white_check_mark: Prefix set to \'**`{args[1]}`**\'')
+                requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                               params={'id': ctx.guild.id, 'prefix': args[1]}, headers=self.bot.header)
+
+                await ctx.send(f':white_check_mark: Prefix set to \'**`{args[1]}`**\'')
             else:
                 await ctx.send('The prefix can\'t be longer then five characters.')
         elif args[0] in ['volume', 'vol']:
@@ -168,65 +174,89 @@ class General(commands.Cog):
                 try:
                     volume = int(args[1])
                     if 0 <= volume <= 100:
-                        with self.bot.conn:
-                            self.bot.c.execute(f'UPDATE guilds SET Volume = {volume} WHERE GuildID = {ctx.guild.id}')
+                        requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                       params={'id': ctx.guild.id, 'volume': volume}, headers=self.bot.header)
                         if ctx.guild.id in self.bot.voice_states:
                             self.bot.voice_states[ctx.guild.id]._volume = volume/100
                         await ctx.message.add_reaction('🐸')
                     else:
-                        await ctx.send('The volume must be between 0 and 100')
+                        await ctx.send('The volume must be a number between 0 and 100')
                 except Exception:
                     await ctx.send('The volume must be a number')
+            else:
+                response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                        params={'id': ctx.guild.id}, headers=self.bot.header).json()
+                if response.get('items'):
+                    await ctx.send(f'The current volume is at {response["items"][0]["volume"]}/100')
         elif args[0] in ['timeout']:
             if len(args) > 1 and args[1]:
                 try:
                     timeout = int(args[1])
                     if 0 <= timeout <= 6000:
-                        with self.bot.conn:
-                            self.bot.c.execute(
-                                f'UPDATE guilds SET Timeout = {timeout} WHERE GuildID = {ctx.guild.id}')
+                        requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                       params={'id': ctx.guild.id, 'timeout': timeout}, headers=self.bot.header)
                         if ctx.guild.id in self.bot.voice_states:
                             self.bot.voice_states[ctx.guild.id].timeout = timeout
                         await ctx.message.add_reaction('🐸')
                     else:
-                        await ctx.send('The timeout must be between 0 and 6000')
+                        await ctx.send('The timeout must be a number between 0 and 6000')
                 except Exception:
                     await ctx.send('The timeout must be a number')
+            else:
+                response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                        params={'id': ctx.guild.id}, headers=self.bot.header).json()
+                if response.get('items'):
+                    await ctx.send(f'The current timeout is set at {response["items"][0]["timeout"]} seconds')
         elif args[0] in ['musicrole', 'mr']:
             if len(args) > 1 and args[1]:
                 try:
                     musicrole = int(args[1])
-                    with self.bot.conn:
-                        self.bot.c.execute(
-                            f'UPDATE guilds SET ReqRole = {musicrole} WHERE GuildID = {ctx.guild.id}')
-                    await ctx.message.add_reaction('🐸')
+                    role = ctx.guild.get_role(musicrole)
+                    if role:
+                        requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                       params={'id': ctx.guild.id, 'musicRoleId': musicrole}, headers=self.bot.header)
+                        await ctx.message.add_reaction('🐸')
+                    else:
+                        await ctx.send('There is no role with this id in this guild.')
                 except Exception:
                     await ctx.send('The music role must be a number')
         elif args[0] in ['musicchannel', 'mc']:
             if len(args) > 1 and args[1]:
                 try:
                     musicChannelId = int(args[1])
-                    with self.bot.conn:
-                        self.bot.c.execute(
-                            f'UPDATE guilds SET MusicChannelId = {musicChannelId} WHERE GuildID = {ctx.guild.id}')
-                    if ctx.guild.id in self.bot.voice_states:
-                        self.bot.voice_states[ctx.guild.id].music_channel_id = musicChannelId
-                    await ctx.message.add_reaction('🐸')
+                    channel = ctx.guild.get_channel(musicChannelId)
+                    if channel and channel.type == ChannelType.text:
+                        requests.patch(
+                            f'{self.bot.base_api_url}discord/guild/',
+                            params={'id': ctx.guild.id, 'musicChannelId': musicChannelId},
+                            headers=self.bot.header)
+                        if ctx.guild.id in self.bot.voice_states:
+                            self.bot.voice_states[ctx.guild.id].music_channel_id = musicChannelId
+
+                        await ctx.message.add_reaction('🐸')
+                    else:
+                        await ctx.send('There is no text channel with this id in this guild.')
                 except Exception:
                     await ctx.send('The music channel must be a number')
         elif args[0] in ['reset']:
             if len(args) > 1 and args[1] == 'true':
-                with self.bot.conn:
-                    self.bot.c.execute(
-                        f'UPDATE guilds SET Prefix = \'!\', Volume = 50, MusicChannelId = 0, Timeout = 300, Reqrole = 0 WHERE GuildID = {ctx.guild.id}')
+                requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                               params={'id': ctx.guild.id,
+                                       'prefix': '!',
+                                       'volume': 50,
+                                       'timeout': 300,
+                                       'musicRoleId': 0,
+                                       'musicChannelId': 0},
+                               headers=self.bot.header)
                 if ctx.guild.id in self.bot.voice_states:
                     self.bot.voice_states[ctx.guild.id].music_channel_id = 0
                     self.bot.voice_states[ctx.guild.id]._volume = 0.5
                     self.bot.voice_states[ctx.guild.id].timeout = 300
                 await ctx.send(f':white_check_mark: Reset all settings for this guild.')
             else:
-                self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
-                prefix = self.bot.c.fetchone()[0]
+                response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                        params={'id': ctx.guild.id}, headers=self.bot.header).json()
+                prefix = response['items'][0]['prefix'] if response.get('items') else '!'
                 embed = Embed(title='Reset',
                               description=f'Resets all settings for the bot in this guild.',
                               inline=False,
@@ -237,8 +267,9 @@ class General(commands.Cog):
                                 inline=False)
                 await ctx.send(embed=embed)
         else:
-            self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {ctx.guild.id}')
-            prefix = self.bot.c.fetchone()[0]
+            response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                    params={'id': ctx.guild.id}, headers=self.bot.header).json()
+            prefix = response['items'][0]['prefix'] if response.get('items') else '!'
             embed = Embed(title=':gear: Frogbot settings',
                           description='Use this command to customize this bot.',
                           inline=False,
@@ -262,7 +293,9 @@ class General(commands.Cog):
     async def on_message(self, message: Message):
         if not message.author.bot and message.content.find(f'<@!{self.bot.user.id}>') != -1:
             if message.guild:
-                self.bot.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}')
-                await message.channel.send(f'My current prefix is **`{self.bot.c.fetchone()[0]}`**')
+                response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                        params={'id': message.guild.id}, headers=self.bot.header).json()
+                prefix = response['items'][0]['prefix'] if response.get('items') else '!'
+                await message.channel.send(f'My current prefix is **`{prefix}`**')
             else:
                 await message.channel.send(f'My current prefix is **`!`**')

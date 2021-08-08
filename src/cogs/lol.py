@@ -44,9 +44,10 @@ class lolStats(commands.Cog):
             return
         try:
             if str(ctx.author.id) == summoner.verification_string:
-                with self.bot.conn:
-                    self.bot.c.execute(
-                        f'INSERT INTO lol_links (SummonerName, Region, DiscordID, puuid) VALUES (\'{summonerName}\', \'{region}\', {ctx.author.id}, \'{summoner.puuid}\')')
+                # self.bot.db.query('')
+                # with self.bot.conn:
+                #    self.bot.c.execute(
+                #       f'INSERT INTO lol_links (SummonerName, Region, DiscordID, puuid) VALUES (\'{summonerName}\', \'{region}\', {ctx.author.id}, \'{summoner.puuid}\')')
                 await ctx.message.add_reaction('✅')
             else:
                 await ctx.message.reply(f'No verificationcode found for {summonerName} on {region}. Please set your Discord ID \'{ctx.author.id}\' in the client as a verification code.', mention_author=False)

@@ -1,36 +1,32 @@
 import logging
-import sqlite3
 import zipfile
 from datetime import datetime
 from time import time
 
 import data.config as config
+import requests
 from discord import Activity, ActivityType, Game, Intents, Message, Streaming
 from discord.ext import commands, tasks
 from src.bot.__tokens__ import __tokens__
 from src.cogs.__cogs__ import __cogs__
-from src.stats.entry import Active, Afk
 
 
 class Bot(commands.Bot):
     def __init__(self):
+        self.header = {'token': __tokens__['frogbot_api']}
+        self.base_api_url = config.base_api_url
         self.start_time = time()
         self.date = str(datetime.utcnow().date())
         self.description: str = config.description
         self.loaded_cogs: list[str] = []
         self.logo_url: str = config.logo_url
-        self.mainGuildId = config.mainGuildId
+        self.main_guild_id = config.main_guild_id
+        self.command_counter = 0
+        self.open_searches = {}
         # dm system config
         self.support_category_id: int = config.support_category_id
         self.support_log_channel_id: int = config.support_log_channel_id
         self.support_role_id: int = config.support_role_id
-        # Recorder dicts
-        self.users_afk: dict[int, Afk] = {}
-        self.users_active: dict[int, Active] = {}
-        # Connect to the database
-        self.database_location = config.database_location
-        self.conn = sqlite3.connect(self.database_location)
-        self.c = self.conn.cursor()
         # Create Logger
         self.logger = logging.getLogger('bot')
         self.logger.setLevel(logging.DEBUG)
@@ -54,24 +50,24 @@ class Bot(commands.Bot):
         self.remove_command('help')
 
         self.date_loop.start()
-        self.save_entry_loop.start()
+        self.save_stats.start()
 
     def _start(self):
         self.run(__tokens__['bot'])
 
     def _get_prefix(self, _, message: Message):
         if message.guild:
-            self.c.execute(f'SELECT Prefix FROM guilds WHERE GuildID = {message.guild.id}')
-            prefix = self.c.fetchone()
-            if prefix:
-                return prefix[0]
+            response = requests.get(f'{self.base_api_url}discord/guild/',
+                                    params={'id': message.guild.id}, headers=self.header).json()
+            if response.get('items'):
+                return response['items'][0]['prefix']
         return '!'
 
     async def on_ready(self):
         await self.setStatus('s', 'with frogs')
         for extension in __cogs__:
             try:
-                self.loadCog(extension)
+                await self.loadCog(extension)
             except Exception as e:
                 print(e)
         print(f'\n   Frogbot:\n'
@@ -100,7 +96,7 @@ class Bot(commands.Bot):
         elif _type == 's':
             await self.change_presence(activity=Streaming(name=message, url='http://www.twitch.tv/frogbot__'))
 
-    def loadCog(self, cog: str):
+    async def loadCog(self, cog: str):
         try:
             mod = __import__(f'src.cogs.{cog.lower()}', fromlist=[cog.lower().capitalize()])
             _class = getattr(mod, cog.capitalize())
@@ -111,7 +107,7 @@ class Bot(commands.Bot):
             return e
         return
 
-    def removeCog(self, cog: str):
+    async def removeCog(self, cog: str):
         try:
             self.remove_cog(cog.lower().capitalize())
             self.loaded_cogs.remove(cog.lower())
@@ -122,43 +118,53 @@ class Bot(commands.Bot):
     @tasks.loop(minutes=10)
     async def date_loop(self):
         # Backup
-        if self.date != str(datetime.utcnow().date()):
-            try:
-                with self.conn:
-                    self.c.execute(
-                        f'INSERT INTO botStats (Date, Guilds, CommandsUsed) VALUES (\'{str(self.date)}\', {len(self.guilds)}, {self.commandCounter})')
-            except Exception as e:
-                self.logger.exception(f'update_date - {e}')
-            self.commandCounter = 0
+        if self.date == str(datetime.utcnow().date()):
+            return
 
-            try:
-                zip_archive = zipfile.ZipFile(f'data/backup/db_{self.date}.zip', 'w')
-                zip_archive.write('data/database.db', compress_type=zipfile.ZIP_DEFLATED)
-                zip_archive.write('data/bot.log', compress_type=zipfile.ZIP_DEFLATED)
-                zip_archive.close()
-                self.logger.info('Backup created')
-            except Exception as e:
-                self.logger.exception(f'update_date - zip - {e}')
+        await self.frogbot_entry()
+        await self.create_backup()
 
-            self.date = str(datetime.utcnow().date())
-            self.logger.info('Successfully changed date.')
-            self.loadNew()
-            self.logger.info('Reset of active and afk user')
+        self.date = str(datetime.utcnow().date())
+        self.logger.info('Successfully changed date.')
+
+    async def create_backup(self):
+        zip_archive = zipfile.ZipFile(f'data/backup/db_{self.date}.zip', 'w')
+        zip_archive.write('data/bot.log', compress_type=zipfile.ZIP_DEFLATED)
+        zip_archive.close()
+        self.logger.info('Backup created')
+
+    async def frogbot_entry(self):
+        request = {
+            'date': self.date,
+            'guilds': len(self.guilds),
+            'commandsUsed': self.command_counter
+        }
+        requests.put(f'{self.base_api_url}frogbot/entry/', params=request, headers=self.header)
+        self.command_counter = 0
+
+    async def user_active(self, user_id, channel_id, guild_id):
+        requests.put(f'{self.base_api_url}discord/active/',
+                     params={'userId': user_id,
+                             'channelId': channel_id,
+                             'guildId': guild_id},
+                     headers=self.header)
+
+    async def user_afk(self, user_id, channel_id, guild_id):
+        requests.put(f'{self.base_api_url}discord/afk/',
+                     params={'userId': user_id,
+                             'channelId': channel_id,
+                             'guildId': guild_id},
+                     headers=self.header)
 
     @tasks.loop(minutes=10)
-    async def save_entry_loop(self):
-        for user in self.users_active.values():
-            user.save(self.conn, self.c)
-        for user in self.users_afk.values():
-            user.save(self.conn, self.c)
-        self.users_active = {}
-        self.users_afk = {}
+    async def save_stats(self):
+        requests.put(f'{self.base_api_url}discord/save/stats', headers=self.header)
 
         for guild in self.guilds:
             for channel in guild.voice_channels:
                 for member in channel.members:
                     if not member.bot:
-                        if (member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute) and not member.id in self.users_afk:
-                            self.users_afk[member.id] = Afk(member.id, channel.id, guild.id)
-                        elif not member.id in self.users_active:
-                            self.users_active[member.id] = Active(member.id, channel.id, guild.id)
+                        if member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute:
+                            await self.user_afk(member.id, channel.id, guild.id)
+                        else:
+                            await self.user_active(member.id, channel.id, guild.id)

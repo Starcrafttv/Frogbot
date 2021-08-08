@@ -1,10 +1,12 @@
 import asyncio
 import math
 import pickle
-import random
+from random import shuffle as Mix
 
+import requests
 from discord import Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, User
 from src.bot.bot import Bot
+from src.music.queue import Queue
 
 
 class VoiceError(Exception):
@@ -21,19 +23,18 @@ class VoiceState():
         self.bot = bot
         self.guild_id = guild_id
         self.current_song = None
-        self.queue = []
-        self.previous = []
+        self.queue = Queue()
+        self.previous = Queue()
         self.voice = None
         self.next = asyncio.Event()
 
         # Load guild settings
-        self.bot.c.execute(
-            f'SELECT MusicChannelId, Volume, Timeout FROM guilds WHERE GuildID = {self.guild_id}')
-        settings = self.bot.c.fetchone()
-        if settings:
-            self.music_channel_id = int(settings[0])
-            self._volume = int(settings[1])/100
-            self.timeout = int(settings[2])
+        response = requests.get(f'{self.bot.base_api_url}discord/guild/',
+                                params={'id': guild_id}, headers=self.bot.header).json()
+        if response.get('items'):
+            self.music_channel_id = response['items'][0]['musicChannelId']
+            self._volume = response['items'][0]['volume']/100
+            self.timeout = response['items'][0]['timeout']
         else:
             self._volume = 0.5
             self.timeout = 300
@@ -57,21 +58,21 @@ class VoiceState():
     def is_playing(self) -> bool:
         return self.voice and self.current_song
 
-    def load_playlist(self, requester: User, playlist_id: int) -> None:
+    async def load_playlist(self, requester: User, playlist_id: int) -> None:
         with open(f'data/playlists/{playlist_id}.p', 'rb') as f:
             songs = pickle.load(f)
-        random.shuffle(songs)
+        Mix(songs)
         for song in songs:
             song.requester_name = f'{requester.name}#{requester.discriminator}'
             song.requester_id = requester.id
-            self.queue.append(song)
+            self.queue.put(song)
 
-    def save_playlist(self, playlist_id: int):
+    async def save_playlist(self, playlist_id: int):
         with open(f'data/playlists/{playlist_id}.p', 'wb') as f:
-            pickle.dump([self.current_song] + self.queue, f)
+            pickle.dump([self.current_song] + self.queue.get(), f)
 
-    def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:
-        pages = math.ceil(len(self.queue)/page_size)
+    async def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:
+        pages = math.ceil(self.queue.get_len()/page_size)
 
         if page < 1:
             page = 1
@@ -90,39 +91,38 @@ class VoiceState():
             embed.add_field(name='Now playing:',
                             value=f'[{self.current_song.title}]({self.current_song.url})',
                             inline=False)
+        if self.queue.get_len():
+            for i, song in enumerate(self.queue.get_slice(start, end), start=start):
+                embed.add_field(name=f'**`{i+1}.`** {song.title}',
+                                value=f'By {song.channel_title}, Duration: {song.duration_str}',
+                                inline=False)
 
-        for i, song in enumerate(self.queue[start:end], start=start):
-            embed.add_field(name=f'**`{i+1}.`** {song.title}',
-                            value=f'By {song.channel_title}, Duration: {song.duration_str}',
-                            inline=False)
-
-        if len(self.queue):
             embed.set_footer(text=f'Page {page} of {pages}')
         else:
             embed.add_field(name='Soo empty',
                             value='\u200b')
         return embed
 
-    def skip(self):
+    async def skip(self):
         if self.is_playing:
             self.voice.stop()
 
-    def play_previous(self):
+    async def play_previous(self):
         if self.current_song:
-            self.queue.insert(0, self.current_song)
+            self.queue.put_index(self.current_song, 0)
 
-        if self.previous:
-            self.queue.insert(0, self.previous[-1])
+        if self.previous.get_len():
+            self.queue.insert([self.previous.get_at(-1)])
 
         if self.is_playing:
             self.voice.stop()
 
-    def shuffle(self):
-        random.shuffle(self.queue)
+    async def shuffle(self):
+        self.queue.shuffle()
 
     def play_next_song(self, error=None):
         if error:
-            raise VoiceError(str(error))
+            raise VoiceError(f'Voiceerror: {str(error)}')
 
         self.next.set()
 
@@ -144,12 +144,12 @@ class VoiceState():
                     else:
                         alone = True
 
-                    if len(self.queue) and not alone:
+                    if self.queue.get_len() and not alone:
                         if self.current_song:
-                            self.previous.append(self.current_song)
+                            self.previous.put(self.current_song)
                             if self._loop_queue:
-                                self.queue.append(self.current_song)
-                        self.current_song = self.queue.pop(0)
+                                self.queue.put(self.current_song)
+                        self.current_song = self.queue.pop_first()
                         _timeout = 0
                         break
 
@@ -159,10 +159,11 @@ class VoiceState():
                         return
                     await asyncio.sleep(timer)
 
-            if self._buffer_id == self.current_song.id:
-                mp3_url = self._buffer_url
-            else:
-                mp3_url = await self.current_song.get_mp3_url()
+            if self.current_song.duration:
+                if self._buffer_id == self.current_song.id:
+                    mp3_url = self._buffer_url
+                else:
+                    mp3_url = await self.current_song.get_mp3_url()
 
             if mp3_url:
                 self.voice.play(
@@ -174,15 +175,16 @@ class VoiceState():
                     after=self.play_next_song)
 
                 self.bot.dispatch('playing_song', self)
-                if len(self.queue) and self._buffer_id != self.current_song.id:
-                    self._buffer_url = await self.queue[0].get_mp3_url()
+                if self.queue.get_len() and self._buffer_id != self.current_song.id and self.queue.get_first().duration:
+                    self._buffer_url = await self.queue.get_first().get_mp3_url()
                     if self._buffer_url:
-                        self._buffer_id = self.queue[0].id
+                        self._buffer_id = self.queue.get_first().id
                 await self.next.wait()
 
     async def stop(self):
-        self.queue = []
+        self.queue.clear()
 
         if self.voice:
             await self.voice.disconnect()
+            self.queue.clear()
             self.voice = None
