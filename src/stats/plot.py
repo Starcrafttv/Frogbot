@@ -80,7 +80,7 @@ async def get_raw_stats(username: str, timezone: int, last_days, active: list, a
         ax.spines['left'].set_color('none')
         x = [i for i in range(last_days)]
 
-        ax = await add_plot_points(ax, active, dates, '#7289DA')
+        ax = await add_plot_points(ax, active, dates, '#7289DA', 4)
         ax = await add_plot_points(ax, afk, dates, '#b9bbbe')
 
         plt.grid(color='#2C2F33', linestyle=':', linewidth=1, axis='both', zorder=1)

@@ -2,7 +2,6 @@
 src/bot/__tokens__.py
 data/database.db
 .vscode/
-.tests/
 *.zip
 *.pyc
 *.p

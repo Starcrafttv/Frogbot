@@ -567,7 +567,6 @@ class Music(commands.Cog):
         destination = user.voice.channel
         if state and state.voice:
             await state.voice.move_to(destination)
-            return
         else:
             state = VoiceState(self.bot, guild_id)
             state.voice = await destination.connect()

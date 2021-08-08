@@ -67,7 +67,10 @@ class General(commands.Cog):
                         value='Joins/leaves your channel',
                         inline=False)
         embed.add_field(name=f'**`{prefix}play <song>`**',
-                        value='Plays a song with the given name or url.',
+                        value='Plays a song with the given name or url (playskip or playtop work the same way).',
+                        inline=False)
+        embed.add_field(name=f'**`{prefix}find <song>`**',
+                        value='Searches Youtube for a song and gives the top 5 results.',
                         inline=False)
         embed.add_field(name=f'**`{prefix}skip`**',
                         value='Skips the current song',

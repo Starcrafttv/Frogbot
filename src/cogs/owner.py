@@ -1,5 +1,6 @@
 import requests
 from discord.ext import commands
+from discord.message import Message
 from src.bot.bot import Bot
 
 
@@ -31,3 +32,23 @@ class Owner(commands.Cog):
         else:
             await self.bot.setStatus(_type, message)
             await ctx.message.add_reaction('🐸')
+
+    @commands.command(name='guilds', hidden=True)
+    @commands.is_owner()
+    async def _guilds(self, ctx: commands.Context, arg: str = ''):
+        if arg == '':
+            await ctx.send(f'I am currently in {len(self.bot.guilds)} guilds.')
+        elif arg == 'new':
+            await ctx.send(f'This function is currently being built...')
+        else:
+            message = 'All guilds I am currently in:\n'
+            n = 50
+            for i, guild in enumerate(self.bot.guilds):
+                message += f'{i+1}. \'{guild.name}\', {len(guild.members)}\n'
+
+                if i > n:
+                    n += 50
+                    await ctx.send(message)
+                    message = ''
+            if message:
+                await ctx.send(message)
