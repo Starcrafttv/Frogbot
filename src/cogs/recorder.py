@@ -43,6 +43,10 @@ class Recorder(commands.Cog):
                          headers=self.bot.header)
 
     @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        pass
+
+    @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
         if member.bot:
             return

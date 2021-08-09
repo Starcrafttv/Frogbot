@@ -151,6 +151,31 @@ class Music(commands.Cog):
             await ctx.voice_state.skip()
             await ctx.message.add_reaction('🐸')
 
+    @commands.command(name='seek', aliases=['sek'])
+    async def _seek(self, ctx: commands.Context, *, args: str = '0'):
+        if not await self.check(ctx.channel, ctx.guild, ctx.author):
+            return
+
+        args = args.split(':')[-3:][::-1]
+
+        position = 0
+
+        for i in range(len(args)):
+            try:
+                position += int(args[i]) * [1, 60, 3600][i]
+            except ValueError:
+                pass
+
+        if ctx.voice_state and ctx.voice_state.voice and ctx.voice_state.current_song:
+            if position < 0:
+                position = 0
+            elif position > ctx.voice_state.current_song.duration:
+                position = ctx.voice_state.current_song.duration
+            await ctx.voice_state.seek_position(position)
+            await ctx.message.add_reaction('🐸')
+        else:
+            await ctx.send('Not playing anything currently.')
+
     @commands.command(name='pause', aliases=['pse'])
     async def _pause(self, ctx: commands.Context, *, args: str = ''):
         if not await self.check(ctx.channel, ctx.guild, ctx.author):

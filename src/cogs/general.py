@@ -75,6 +75,9 @@ class General(commands.Cog):
         embed.add_field(name=f'**`{prefix}skip`**',
                         value='Skips the current song',
                         inline=False)
+        embed.add_field(name=f'**`{prefix}seek <hours:minutes:seconds>`**',
+                        value='Skips to any position in the song.',
+                        inline=False)
         embed.add_field(name=f'**`{prefix}queue <page>`**',
                         value='Shows the a page of the queue.',
                         inline=False)
@@ -95,7 +98,7 @@ class General(commands.Cog):
                         inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(name='playlists')
+    @commands.command(name='playlists', aliases=['playlist'])
     async def playlists(self, ctx: commands.Context, *, arg: str = ''):
         if ctx.author.bot and not ctx.guild:
             return

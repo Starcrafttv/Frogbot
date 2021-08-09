@@ -40,15 +40,30 @@ class Owner(commands.Cog):
             await ctx.send(f'I am currently in {len(self.bot.guilds)} guilds.')
         elif arg == 'new':
             await ctx.send(f'This function is currently being built...')
-        else:
-            message = 'All guilds I am currently in:\n'
+        elif arg == 'voice':
+            await ctx.send('All guilds I am currently connected to:')
+            message = ''
             n = 50
-            for i, guild in enumerate(self.bot.guilds):
-                message += f'{i+1}. \'{guild.name}\', {len(guild.members)}\n'
+            for i, guild_id in enumerate(self.bot.voice_states):
+                guild = self.bot.get_guild(guild_id)
+                message += f'{i+1}. \'{guild.name}\', {guild.member_count}\n'
 
                 if i > n:
                     n += 50
-                    await ctx.send(message)
+                    await ctx.send(f'```{message}```')
                     message = ''
             if message:
-                await ctx.send(message)
+                await ctx.send(f'```{message}```')
+        else:
+            await ctx.send('All guilds I am currently in:')
+            message = ''
+            n = 50
+            for i, guild in enumerate(sorted(self.bot.guilds, key=lambda guild: guild.member_count, reverse=True)):
+                message += f'{i+1}. \'{guild.name}\', {guild.member_count}\n'
+
+                if i > n:
+                    n += 50
+                    await ctx.send(f'```{message}```')
+                    message = ''
+            if message:
+                await ctx.send(f'```{message}```')

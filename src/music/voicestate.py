@@ -44,10 +44,11 @@ class VoiceState():
 
         self.react_message_id = None
         self.react_message_channel_id = None
-        self.timeout = 180
 
-        self._buffer_id = None
-        self._buffer_url = None
+        self._current = {}
+        self._buffer = {}
+
+        self.timestamp = 0
 
         self.audio_player = bot.loop.create_task(self.audio_player_task())
 
@@ -117,6 +118,15 @@ class VoiceState():
         if self.is_playing:
             self.voice.stop()
 
+    async def seek_position(self, position):
+        if self.current_song:
+            self.queue.put_index(self.current_song, 0)
+            self.timestamp = position
+            self.FFMPEG_OPTIONS['options'] = f'-vn -ss {position}'
+
+        if self.is_playing:
+            self.voice.stop()
+
     async def shuffle(self):
         self.queue.shuffle()
 
@@ -126,6 +136,23 @@ class VoiceState():
 
         self.next.set()
 
+    async def check_if_alone(self):
+        if not self.voice:
+            return True
+
+        for member in self.voice.channel.members:
+            if not member.bot:
+                return False
+        else:
+            return True
+
+    async def create_buffer(self):
+        if self.queue.get_len() and self._buffer.get('id') != self.queue.get_first().id and self.queue.get_first().duration:
+            self._buffer = {
+                'id': self.queue.get_first().id,
+                'url': await self.queue.get_first().get_mp3_url()
+            }
+
     async def audio_player_task(self):
         timer = 3
         _timeout = 0
@@ -134,15 +161,7 @@ class VoiceState():
             self.next.clear()
             if not self._loop_song:
                 while True:
-                    if self.voice:
-                        for member in self.voice.channel.members:
-                            if not member.bot:
-                                alone = False
-                                break
-                        else:
-                            alone = True
-                    else:
-                        alone = True
+                    alone = await self.check_if_alone()
 
                     if self.queue.get_len() and not alone:
                         if self.current_song:
@@ -160,25 +179,32 @@ class VoiceState():
                     await asyncio.sleep(timer)
 
             if self.current_song.duration:
-                if self._buffer_id == self.current_song.id:
-                    mp3_url = self._buffer_url
-                else:
-                    mp3_url = await self.current_song.get_mp3_url()
+                if self._buffer.get('id') == self.current_song.id:
+                    self._current = {
+                        'id': self.current_song.id,
+                        'url': self._buffer['url']
+                    }
+                elif self._current.get('id') != self.current_song.id:
+                    self._current = {
+                        'id': self.current_song.id,
+                        'url': await self.current_song.get_mp3_url()
+                    }
 
-            if mp3_url:
+            if self._current.get('url'):
                 self.voice.play(
                     PCMVolumeTransformer(
                         FFmpegPCMAudio(
-                            mp3_url,
+                            self._current['url'],
                             **self.FFMPEG_OPTIONS),
                         self._volume),
                     after=self.play_next_song)
 
+                if self.timestamp != 0:
+                    self.timestamp = 0
+                    self.FFMPEG_OPTIONS['options'] = '-vn'
+
                 self.bot.dispatch('playing_song', self)
-                if self.queue.get_len() and self._buffer_id != self.current_song.id and self.queue.get_first().duration:
-                    self._buffer_url = await self.queue.get_first().get_mp3_url()
-                    if self._buffer_url:
-                        self._buffer_id = self.queue.get_first().id
+                await self.create_buffer()
                 await self.next.wait()
 
     async def stop(self):
