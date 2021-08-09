@@ -35,7 +35,7 @@ class Song():
         self.channel_id: str = snippet.get('channelId')
         self.channel_title: str = snippet.get('channelTitle')
         self.title = snippet.get('title')
-        self.description: str = snippet.get('description')
+        #self.description: str = snippet.get('description')
         self.published_at: str = snippet.get('publishedAt')
         content_details = data.get('contentDetails')
         self.duration: int = self._yt_duration_to_seconds(content_details.get('duration'))

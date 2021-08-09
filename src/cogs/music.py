@@ -6,6 +6,7 @@ import src.music.search as search
 from discord import ChannelType, Colour, Embed, Message, Reaction, User
 from discord.ext import commands
 from src.bot.bot import Bot
+from src.music.sec_to_time import sec_to_time
 from src.music.song import Song
 from src.music.voicestate import VoiceState
 
@@ -87,10 +88,15 @@ class Music(commands.Cog):
             try:
                 songs = await search.get_songs(ctx.author, query)
             except Exception as e:
-                await self.music_error(ctx, f'An error occurred while processing this request: {e}')
+                await self.music_error(
+                    ctx, f'An error occurred while processing this request: {e}'
+                )
+
             else:
+                position = ctx.voice_state.queue.get_len()
+                time_until_playing = sum(song.duration for song in ctx.voice_state.queue.get())
                 ctx.voice_state.queue.put(songs)
-                await self.play_command_message(ctx, songs)
+                await self.play_command_message(ctx, songs, position, time_until_playing)
 
     @commands.command(name='playtop', aliases=['pt'])
     async def _playtop(self, ctx: commands.Context, *, query: str = ''):
@@ -127,17 +133,20 @@ class Music(commands.Cog):
                 await ctx.voice_state.skip()
                 await self.play_command_message(ctx, songs)
 
-    async def play_command_message(self, ctx: commands.Context, songs: list[Song]):
+    async def play_command_message(self, ctx: commands.Context, songs: list[Song], position: int = 0, time_until_playing: int = 0):
         if len(songs) == 1:
             embed = Embed(
-                title=f'Added song to queue:',
+                title=f'Added song to queue at position {position+1}',
                 description=f'[{songs[0].title}]({songs[0].url})\nCreator: {songs[0].channel_title}, Duration: {songs[0].duration_str}',
                 inline=False, colour=Colour.blue())
         else:
             embed = Embed(
-                title=f'Added {len(songs)} songs to queue',
+                title=f'Added {len(songs)} songs to queue at position {position+1}',
                 description=f'1. ‎[{songs[0].title}]({songs[0].url})\n...\n{len(songs)}. ‎‎[{songs[-1].title}]({songs[-1].url})',
                 inline=False, colour=Colour.blue())
+
+        if time_until_playing > 0:
+            embed.set_footer(text=f'Time until playing: {sec_to_time(time_until_playing)}')
 
         embed.set_thumbnail(url=self.bot.logo_url)
         await ctx.send(embed=embed)
@@ -148,7 +157,12 @@ class Music(commands.Cog):
             return
 
         if ctx.voice_state.voice:
-            await ctx.voice_state.skip()
+            try:
+                args = int(args)-1
+            except ValueError:
+                args = 0
+
+            await ctx.voice_state.skip(args)
             await ctx.message.add_reaction('🐸')
 
     @commands.command(name='seek', aliases=['sek'])
@@ -222,7 +236,7 @@ class Music(commands.Cog):
             and 0 <= to_index - 1 <= ctx.voice_state.queue.get_len()
         ):
             song = ctx.voice_state.queue.pop(from_index-1)
-            ctx.voice_state.queue.put_at(song, to_index - 1)
+            ctx.voice_state.queue.put_index(song, to_index - 1)
             await ctx.message.add_reaction('🐸')
 
     @commands.command(name='loopsong', aliases=['ls'])
@@ -604,12 +618,18 @@ class Music(commands.Cog):
         await message.clear_reactions()
         self.bot.open_searches.pop(message.id)
 
+        position = state.queue.get_len()
+        time_until_playing = sum(song.duration for song in state.queue.get())
+
         state.queue.put([song])
 
         embed = Embed(
-            title=f'Added song to queue:',
+            title=f'Added song to queue at position {position+1}:',
             description=f'[{song.title}]({song.url})\nCreator: {song.channel_title}, Duration: {song.duration_str}',
             inline=False, colour=Colour.blue())
+
+        if time_until_playing > 0:
+            embed.set_footer(text=f'Time until playing: {sec_to_time(time_until_playing)}')
 
         embed.set_thumbnail(url=self.bot.logo_url)
 

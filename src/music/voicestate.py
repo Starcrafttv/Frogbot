@@ -104,8 +104,9 @@ class VoiceState():
                             value='\u200b')
         return embed
 
-    async def skip(self):
-        if self.is_playing:
+    async def skip(self, index: int = 0):
+        if self.is_playing and 0 <= index <= self.queue.get_len()-1:
+            self.queue._queue = self.queue._queue[index:]
             self.voice.stop()
 
     async def play_previous(self):

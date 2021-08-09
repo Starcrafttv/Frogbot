@@ -1,7 +1,8 @@
 # bot description
 description = 'A statistics and music bot.'
 # standart logo for embeds
-logo_url = 'https://i.ibb.co/SXQPW9c/logo-512.png'
+#logo_url = 'https://i.ibb.co/SXQPW9c/logo-512.png'
+logo_url = 'https://i.ibb.co/BTsKNp6/logo-256.png'
 # set the main guild
 main_guild_id = 809129332684750889
 # dm system config
