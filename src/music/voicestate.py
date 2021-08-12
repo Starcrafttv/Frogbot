@@ -7,6 +7,7 @@ import requests
 from discord import Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, User
 from src.bot.bot import Bot
 from src.music.queue import Queue
+from src.music.song import Song
 
 
 class VoiceError(Exception):
@@ -59,14 +60,14 @@ class VoiceState():
     def is_playing(self) -> bool:
         return self.voice and self.current_song
 
-    async def load_playlist(self, requester: User, playlist_id: int) -> None:
+    async def load_playlist(self, requester: User, playlist_id: int) -> list[Song]:
         with open(f'data/playlists/{playlist_id}.p', 'rb') as f:
             songs = pickle.load(f)
         Mix(songs)
         for song in songs:
             song.requester_name = f'{requester.name}#{requester.discriminator}'
             song.requester_id = requester.id
-            self.queue.put(song)
+        return songs
 
     async def save_playlist(self, playlist_id: int):
         with open(f'data/playlists/{playlist_id}.p', 'wb') as f:
@@ -74,7 +75,6 @@ class VoiceState():
 
     async def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:
         pages = math.ceil(self.queue.get_len()/page_size)
-
         if page < 1:
             page = 1
         elif page > pages:
@@ -111,19 +111,19 @@ class VoiceState():
 
     async def play_previous(self):
         if self.current_song:
-            self.queue.put_index(self.current_song, 0)
+            self.queue.put_first(self.current_song)
 
         if self.previous.get_len():
-            self.queue.insert([self.previous.get_at(-1)])
+            self.queue.put_first(self.previous.get_at(-1))
 
         if self.is_playing:
             self.voice.stop()
 
     async def seek_position(self, position):
         if self.current_song:
-            self.queue.put_index(self.current_song, 0)
             self.timestamp = position
             self.FFMPEG_OPTIONS['options'] = f'-vn -ss {position}'
+            self.queue.put_index(self.current_song, 0)
 
         if self.is_playing:
             self.voice.stop()

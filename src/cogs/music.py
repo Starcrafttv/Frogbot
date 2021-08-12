@@ -184,7 +184,9 @@ class Music(commands.Cog):
             if position < 0:
                 position = 0
             elif position > ctx.voice_state.current_song.duration:
-                position = ctx.voice_state.current_song.duration
+                await ctx.voice_state.skip()
+                await ctx.message.add_reaction('🐸')
+                return
             await ctx.voice_state.seek_position(position)
             await ctx.message.add_reaction('🐸')
         else:
@@ -313,7 +315,7 @@ class Music(commands.Cog):
                                     headers=self.bot.header).json()
             if not response.get('items'):
                 for item in requests.get(
-                        f'{self.bot.base_api_url}playlist/connections/', params={'guildI': ctx.guild.id},
+                        f'{self.bot.base_api_url}playlist/connections/', params={'guildId': ctx.guild.id},
                         headers=self.bot.header).json().get(
                         'items', []):
                     response = requests.get(f'{self.bot.base_api_url}playlist/',
@@ -325,8 +327,11 @@ class Music(commands.Cog):
                 else:
                     await ctx.send('Couldn\'t find your playlist. Make sure you spelled the name right 🐸')
                     return
-            await ctx.voice_state.load_playlist(ctx.author, response['items'][0]['id'])
-            await ctx.message.add_reaction('🐸')
+            songs = await ctx.voice_state.load_playlist(ctx.author, response['items'][0]['id'])
+            position = ctx.voice_state.queue.get_len()
+            time_until_playing = sum(song.duration for song in ctx.voice_state.queue.get())
+            ctx.voice_state.queue.put(songs)
+            await self.play_command_message(ctx, songs, position, time_until_playing)
 
     @commands.command(name='saveplaylist', aliases=['sp'])
     async def _saveplaylist(self, ctx: commands.Context, *, playlist_name: str):
@@ -378,14 +383,14 @@ class Music(commands.Cog):
 
         guild_playlists = ''
         for item in requests.get(
-            f'{self.bot.base_api_url}playlist/connections/', params={'guildI': ctx.guild.id},
+            f'{self.bot.base_api_url}playlist/connections/', params={'guildId': ctx.guild.id},
             headers=self.bot.header).json().get(
                 'items', []):
             response = requests.get(f'{self.bot.base_api_url}playlist/',
                                     params={'id': item['playlistId']},
                                     headers=self.bot.header).json()
             if response.get('items') and playlists.find(response['items'][0]['name']) == -1:
-                guild_playlists += f'**`{response["items"][0]["name"]}`** by '
+                guild_playlists += f'- **`{response["items"][0]["name"]}`** by '
                 creator = self.bot.get_user(response['items'][0]['userId'])
                 if creator:
                     guild_playlists += f'{creator.name}#{creator.discriminator}\n'

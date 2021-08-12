@@ -25,11 +25,13 @@ async def get_songs(requester: User, query: str) -> list[Song]:
             if id.find('&') != -1:
                 id = id[:id.find('&')]
             return await get_youtube_playlist(requester, id)
-        # Video
-        id = query[query.find('watch?v=')+8:]
-        if id.find('&') != -1:
-            id = id[:id.find('&')]
-        return await get_youtube_video(requester, [id])
+        # # Video
+        if query.find('watch?v=') != -1:
+            id = query[query.find('watch?v=')+8:]
+            if id.find('&') != -1:
+                id = id[:id.find('&')]
+            return await get_youtube_video(requester, [id])
+
     # Spotify
     if query.find('spotify') != -1:
         # Playlist
