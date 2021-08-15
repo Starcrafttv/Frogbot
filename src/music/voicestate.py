@@ -175,7 +175,10 @@ class VoiceState():
 
                     _timeout += timer
                     if _timeout > self.timeout:
-                        self.bot.loop.create_task(self.stop())
+                        await self.stop()
+                        if self.guild_id in self.bot.voice_states:
+                            self.bot.voice_states.pop(self.guild_id)
+
                         return
                     await asyncio.sleep(timer)
 
@@ -211,7 +214,16 @@ class VoiceState():
     async def stop(self):
         self.queue.clear()
 
+        if self.audio_player:
+            self.audio_player.cancel()
+
+        if self.react_message_id:
+            message = await self.bot.get_channel(self.react_message_channel_id).fetch_message(self.react_message_id)
+            await message.clear_reactions()
+
+            self.react_message_id = None
+            self.react_message_channel_id = None
+
         if self.voice:
             await self.voice.disconnect()
-            self.queue.clear()
             self.voice = None

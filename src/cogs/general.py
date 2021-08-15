@@ -187,7 +187,7 @@ class General(commands.Cog):
                         await ctx.message.add_reaction('🐸')
                     else:
                         await ctx.send('The volume must be a number between 0 and 100')
-                except Exception:
+                except ValueError:
                     await ctx.send('The volume must be a number')
             else:
                 response = requests.get(f'{self.bot.base_api_url}discord/guild/',
@@ -206,7 +206,7 @@ class General(commands.Cog):
                         await ctx.message.add_reaction('🐸')
                     else:
                         await ctx.send('The timeout must be a number between 0 and 6000')
-                except Exception:
+                except ValueError:
                     await ctx.send('The timeout must be a number')
             else:
                 response = requests.get(f'{self.bot.base_api_url}discord/guild/',
@@ -224,8 +224,17 @@ class General(commands.Cog):
                         await ctx.message.add_reaction('🐸')
                     else:
                         await ctx.send('There is no role with this id in this guild.')
-                except Exception:
-                    await ctx.send('The music role must be a number')
+                except ValueError:
+                    for role in ctx.guild.roles:
+                        if role.name.lower() == args[1]:
+                            requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                           params={'id': ctx.guild.id, 'musicRoleId': role.id}, headers=self.bot.header)
+                            await ctx.message.add_reaction('🐸')
+                            break
+                    else:
+                        await ctx.send('The music role must be a number or its name.')
+            else:
+                await ctx.send('You must specify the roles name or id')
         elif args[0] in ['musicchannel', 'mc']:
             if len(args) > 1 and args[1]:
                 try:
@@ -242,35 +251,85 @@ class General(commands.Cog):
                         await ctx.message.add_reaction('🐸')
                     else:
                         await ctx.send('There is no text channel with this id in this guild.')
-                except Exception:
-                    await ctx.send('The music channel must be a number')
+                except ValueError:
+                    if args[1] == 'here':
+                        requests.patch(
+                            f'{self.bot.base_api_url}discord/guild/',
+                            params={'id': ctx.guild.id, 'musicChannelId': ctx.channel.id},
+                            headers=self.bot.header)
+                        if ctx.guild.id in self.bot.voice_states:
+                            self.bot.voice_states[ctx.guild.id].music_channel_id = ctx.channel.id
+
+                        await ctx.message.add_reaction('🐸')
+                    else:
+                        await ctx.send('The music channel must be a number or \'here\'')
+            else:
+                await ctx.send('You must specify a channel with its id or \'here\'')
         elif args[0] in ['reset']:
-            if len(args) > 1 and args[1] == 'true':
-                requests.patch(f'{self.bot.base_api_url}discord/guild/',
-                               params={'id': ctx.guild.id,
-                                       'prefix': '!',
-                                       'volume': 50,
-                                       'timeout': 300,
-                                       'musicRoleId': 0,
-                                       'musicChannelId': 0},
-                               headers=self.bot.header)
-                if ctx.guild.id in self.bot.voice_states:
-                    self.bot.voice_states[ctx.guild.id].music_channel_id = 0
-                    self.bot.voice_states[ctx.guild.id]._volume = 0.5
-                    self.bot.voice_states[ctx.guild.id].timeout = 300
-                await ctx.send(f':white_check_mark: Reset all settings for this guild.')
+            if len(args) > 1:
+                if args[1] == 'all':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'prefix': '!',
+                                           'volume': 50,
+                                           'timeout': 300,
+                                           'musicRoleId': 0,
+                                           'musicChannelId': 0},
+                                   headers=self.bot.header)
+                    if ctx.guild.id in self.bot.voice_states:
+                        self.bot.voice_states[ctx.guild.id].music_channel_id = 0
+                        self.bot.voice_states[ctx.guild.id]._volume = 0.5
+                        self.bot.voice_states[ctx.guild.id].timeout = 300
+                    await ctx.send(f':white_check_mark: Reset all settings for this guild.')
+                elif args[1] == 'prefix':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'prefix': '!'},
+                                   headers=self.bot.header)
+                    await ctx.send(f':white_check_mark: Reset prefix to **`!`**')
+                elif args[1] == 'volume':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'volume': 50},
+                                   headers=self.bot.header)
+                    if ctx.guild.id in self.bot.voice_states:
+                        self.bot.voice_states[ctx.guild.id]._volume = 0.5
+                    await ctx.send(f':white_check_mark: Reset volume to **`50`**')
+                elif args[1] == 'musicrole':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'musicRoleId': 0},
+                                   headers=self.bot.header)
+                    await ctx.send(f':white_check_mark: Reset music role')
+                elif args[1] == 'musicchannel':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'musicChannelId': 0},
+                                   headers=self.bot.header)
+                    if ctx.guild.id in self.bot.voice_states:
+                        self.bot.voice_states[ctx.guild.id].music_channel_id = 0
+                    await ctx.send(f':white_check_mark: Reset music channel')
+                elif args[1] == 'timeout':
+                    requests.patch(f'{self.bot.base_api_url}discord/guild/',
+                                   params={'id': ctx.guild.id,
+                                           'timeout': 300},
+                                   headers=self.bot.header)
+                    if ctx.guild.id in self.bot.voice_states:
+                        self.bot.voice_states[ctx.guild.id].timeout = 300
+                    await ctx.send(f':white_check_mark: Reset bot timeout to 300 seconds')
             else:
                 response = requests.get(f'{self.bot.base_api_url}discord/guild/',
                                         params={'id': ctx.guild.id}, headers=self.bot.header).json()
                 prefix = response['items'][0]['prefix'] if response.get('items') else '!'
                 embed = Embed(title='Reset',
-                              description=f'Resets all settings for the bot in this guild.',
+                              description=f'Resets settings for the bot in this guild.',
                               inline=False,
                               colour=Colour.blue())
                 embed.set_thumbnail(url=self.bot.logo_url)
-                embed.add_field(name='Command:',
-                                value=f'**`{prefix}settings reset true`**',
-                                inline=False)
+                embed.add_field(
+                    name='Command:',
+                    value=f'**`{prefix}settings reset <all/prefix/volume/musicrole/musicchannel/timeout>`**',
+                    inline=False)
                 await ctx.send(embed=embed)
         else:
             response = requests.get(f'{self.bot.base_api_url}discord/guild/',
@@ -282,17 +341,23 @@ class General(commands.Cog):
                           colour=Colour.blue())
             embed.set_thumbnail(url=self.bot.logo_url)
             embed.add_field(name='Prefix:',
-                            value=f'**`{prefix}settings prefix <prefix>`**')
+                            value=f'**`{prefix}settings prefix <prefix>`**',
+                            inline=False)
             embed.add_field(name='Timeout:',
-                            value=f'**`{prefix}settings timeout <timeout>`**')
+                            value=f'**`{prefix}settings timeout <timeout>`**',
+                            inline=False)
             embed.add_field(name='Volume:',
-                            value=f'**`{prefix}settings volume <volume>`**')
+                            value=f'**`{prefix}settings volume <volume>`**',
+                            inline=False)
             embed.add_field(name='Music Channel:',
-                            value=f'**`{prefix}settings musicchannel <music_channel_id>`**')
+                            value=f'**`{prefix}settings musicchannel <music_channel_id or \'here\'>`**',
+                            inline=False)
             embed.add_field(name='Music Role:',
-                            value=f'**`{prefix}settings musicrole <music_role_id>`**')
+                            value=f'**`{prefix}settings musicrole <music_role_id or its name>`**',
+                            inline=False)
             embed.add_field(name='Reset:',
-                            value=f'**`{prefix}settings reset`**')
+                            value=f'**`{prefix}settings reset <option to reset>`**',
+                            inline=False)
             await ctx.send(embed=embed)
 
     @commands.Cog.listener()

@@ -74,7 +74,8 @@ class Music(commands.Cog):
             return
 
         await ctx.voice_state.stop()
-        del self.bot.voice_states[ctx.guild.id]
+        if ctx.guild.id in self.bot.voice_states:
+            self.bot.voice_states.pop(ctx.guild.id)
 
     @commands.command(name='play', aliases=['p'])
     async def _play(self, ctx: commands.Context, *, query: str = ''):
@@ -522,6 +523,19 @@ class Music(commands.Cog):
 
     @_join.before_invoke
     @_play.before_invoke
+    @_playtop.before_invoke
+    @_playskip.before_invoke
+    @_skip.before_invoke
+    @_pause.before_invoke
+    @_resume.before_invoke
+    @_shuffle.before_invoke
+    @_remove.before_invoke
+    @_move.before_invoke
+    @_loopsong.before_invoke
+    @_loopqueue.before_invoke
+    @_clear.before_invoke
+    @_clear.before_invoke
+    @_loadplaylist.before_invoke
     async def ensure_voice_state(self, ctx: commands.Context):
         if not ctx.author.voice or not ctx.author.voice.channel:
             raise commands.CommandError('You are not connected to any voice channel.')
@@ -584,10 +598,11 @@ class Music(commands.Cog):
                 message = await reaction.message.channel.send(embed=await state.get_queue_embed())
                 self.bot.dispatch('new_reaction_message', state, message)
             elif reaction.emoji == '❌':
-                await reaction.message.clear_reactions()
                 if state.voice:
                     await state.stop()
-                del self.bot.voice_states[user.guild.id]
+                if user.guild.id in self.bot.voice_states:
+                    self.bot.voice_states.pop(user.guild.id)
+                #del self.bot.voice_states[user.guild.id]
         elif reaction.message.id in self.bot.open_searches:
             await reaction.message.remove_reaction(reaction.emoji, user)
 
