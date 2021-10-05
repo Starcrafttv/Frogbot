@@ -1,6 +1,6 @@
 import requests
-from discord import Colour, Embed
-from discord.ext import commands
+from nextcord import Colour, Embed
+from nextcord.ext import commands
 from src.bot.bot import Bot
 from src.stats.sec_to_time import sec_to_time
 from src.stats.stats import get_last_days
@@ -58,7 +58,6 @@ class Average(commands.Cog):
         # Create an embed and calculate the averages
         embed = Embed(title=username,
                       description=f'Averages for last {requested_days} days:',
-                      inline=False,
                       colour=Colour.blue())
         embed.add_field(name='Active time:',
                         value=f'{await sec_to_time(sum(day[1] for day in stats[1:]) / requested_days)} per day',

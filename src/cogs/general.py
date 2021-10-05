@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 import requests
-from discord import ChannelType, Colour, Embed, Message
-from discord.ext import commands
+from nextcord import ChannelType, Colour, Embed, Message
+from nextcord.ext import commands
 from src.bot.bot import Bot
 
 
@@ -24,7 +24,6 @@ class General(commands.Cog):
 
         embed = Embed(title=':book: A list of all commands:',
                       description='‎‎\u200b',
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         embed.add_field(name=f'**`{prefix}music`**',
@@ -60,7 +59,6 @@ class General(commands.Cog):
         prefix = response['items'][0]['prefix'] if response.get('items') else '!'
         embed = Embed(title=':book: A list of all music commands:',
                       description='‎‎\u200b',
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         embed.add_field(name=f'**`{prefix}join/leave`**',
@@ -108,7 +106,6 @@ class General(commands.Cog):
         prefix = response['items'][0]['prefix'] if response.get('items') else '!'
         embed = Embed(title=':book: A list of all playlist commands:',
                       description='All playlists are user specific but can be added to guilds for other people to use.',
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         embed.add_field(name=f'**`{prefix}allplaylists`**',
@@ -135,19 +132,20 @@ class General(commands.Cog):
     async def invite(self, ctx: commands.Context, *, args: str = ''):
         embed = Embed(
             title='\u200b',
-            description=f'[Invite me](https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=37088320)',
-            inline=False, colour=Colour.blue())
+            description=f'[Invite me](https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot'
+                        f'&permissions=37088320)', colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         await ctx.send(embed=embed)
 
     @commands.command(name='timezone', aliases=['tz'])
     async def timezone(self, ctx: commands.Context, *, timezone=None):
         if timezone is None:
-
             response = requests.get(f'{self.bot.base_api_url}discord/user/',
                                     params={'id': ctx.author.id}, headers=self.bot.header).json()
             timezone = response['items'][0]['timezone'] if response.get('items') else 0
-            await ctx.send(f':clock9: Your current timezone should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
+            await ctx.send(
+                f':clock9: Your current timezone should be '
+                f'{(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
             return
         try:
             timezone = int(timezone)
@@ -157,7 +155,9 @@ class General(commands.Cog):
                 requests.patch(f'{self.bot.base_api_url}discord/user/',
                                params={'id': ctx.author.id, 'timezone': timezone}, headers=self.bot.header)
 
-                await ctx.send(f':clock9: Successfully updated your timezone. It should be {(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
+                await ctx.send(
+                    f':clock9: Successfully updated your timezone. It should be '
+                    f'{(datetime.utcnow() + timedelta(hours=timezone)).strftime("%H:%M")} o\'clock for you.')
             return
         except ValueError:
             return
@@ -183,7 +183,7 @@ class General(commands.Cog):
                         requests.patch(f'{self.bot.base_api_url}discord/guild/',
                                        params={'id': ctx.guild.id, 'volume': volume}, headers=self.bot.header)
                         if ctx.guild.id in self.bot.voice_states:
-                            self.bot.voice_states[ctx.guild.id]._volume = volume/100
+                            self.bot.voice_states[ctx.guild.id]._volume = volume / 100
                         await ctx.message.add_reaction('🐸')
                     else:
                         await ctx.send('The volume must be a number between 0 and 100')
@@ -238,15 +238,15 @@ class General(commands.Cog):
         elif args[0] in ['musicchannel', 'mc']:
             if len(args) > 1 and args[1]:
                 try:
-                    musicChannelId = int(args[1])
-                    channel = ctx.guild.get_channel(musicChannelId)
+                    music_channel_id = int(args[1])
+                    channel = ctx.guild.get_channel(music_channel_id)
                     if channel and channel.type == ChannelType.text:
                         requests.patch(
                             f'{self.bot.base_api_url}discord/guild/',
-                            params={'id': ctx.guild.id, 'musicChannelId': musicChannelId},
+                            params={'id': ctx.guild.id, 'musicChannelId': music_channel_id},
                             headers=self.bot.header)
                         if ctx.guild.id in self.bot.voice_states:
-                            self.bot.voice_states[ctx.guild.id].music_channel_id = musicChannelId
+                            self.bot.voice_states[ctx.guild.id].music_channel_id = music_channel_id
 
                         await ctx.message.add_reaction('🐸')
                     else:
@@ -323,7 +323,6 @@ class General(commands.Cog):
                 prefix = response['items'][0]['prefix'] if response.get('items') else '!'
                 embed = Embed(title='Reset',
                               description=f'Resets settings for the bot in this guild.',
-                              inline=False,
                               colour=Colour.blue())
                 embed.set_thumbnail(url=self.bot.logo_url)
                 embed.add_field(
@@ -337,7 +336,6 @@ class General(commands.Cog):
             prefix = response['items'][0]['prefix'] if response.get('items') else '!'
             embed = Embed(title=':gear: Frogbot settings',
                           description='Use this command to customize this bot.',
-                          inline=False,
                           colour=Colour.blue())
             embed.set_thumbnail(url=self.bot.logo_url)
             embed.add_field(name='Prefix:',

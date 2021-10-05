@@ -3,10 +3,12 @@ import zipfile
 from datetime import datetime
 from time import time
 
+from typing import List
+
 import data.config as config
 import requests
-from discord import Activity, ActivityType, Game, Intents, Message, Streaming
-from discord.ext import commands, tasks
+from nextcord import Activity, ActivityType, Game, Intents, Message, Streaming
+from nextcord.ext import commands, tasks
 from src.bot.__tokens__ import __tokens__
 from src.cogs.__cogs__ import __cogs__
 
@@ -18,11 +20,10 @@ class Bot(commands.Bot):
         self.start_time = time()
         self.date = str(datetime.utcnow().date())
         self.description: str = config.description
-        self.loaded_cogs: list[str] = []
+        self.loaded_cogs: List[str] = []
         self.logo_url: str = config.logo_url
         self.main_guild_id = config.main_guild_id
         self.command_counter = 0
-        self.open_searches = {}
         # dm system config
         self.support_category_id: int = config.support_category_id
         self.support_log_channel_id: int = config.support_log_channel_id
@@ -46,11 +47,13 @@ class Bot(commands.Bot):
         # Music
         self.voice_states = {}
 
-        super().__init__(intents=Intents.all(), command_prefix=self._get_prefix,  description=self.description, case_insensitive=True)
+        super().__init__(intents=Intents.all(), command_prefix=self._get_prefix, description=self.description,
+                         case_insensitive=True)
         self.remove_command('help')
 
         self.date_loop.start()
         self.save_stats.start()
+        self.voice_timeout.start()
 
     def _start(self):
         self.run(__tokens__['bot'])
@@ -64,10 +67,10 @@ class Bot(commands.Bot):
         return '!'
 
     async def on_ready(self):
-        await self.setStatus('s', 'with frogs')
+        await self.set_status('s', 'with frogs')
         for extension in __cogs__:
             try:
-                await self.loadCog(extension)
+                await self.load_cog(extension)
             except Exception as e:
                 print(e)
         print(f'\n   Frogbot:\n'
@@ -84,9 +87,12 @@ class Bot(commands.Bot):
               f'│  ID: \'{self.user.id}\'\n'
               f'└────────────────────────────────────────────────\n')
         self.logger.info(
-            f'Started {self.user.name}#{self.user.discriminator}, ID = {self.user.id} in {round(time() - self.start_time, 3)} seconds')
+            f'Started {self.user.name}#{self.user.discriminator}, '
+            f'ID = {self.user.id} in {round(time() - self.start_time, 3)} seconds')
 
-    async def setStatus(self, _type: str, message: str):
+
+
+    async def set_status(self, _type: str, message: str):
         if _type == 'w':
             await self.change_presence(activity=Activity(type=ActivityType.watching, name=message))
         elif _type == 'l':
@@ -94,9 +100,9 @@ class Bot(commands.Bot):
         elif _type == 'p':
             await self.change_presence(activity=Game(name=message))
         elif _type == 's':
-            await self.change_presence(activity=Streaming(name=message, url='http://www.twitch.tv/frogbot__'))
+            await self.change_presence(activity=Streaming(name=message, url='https://www.twitch.tv/frogbot__'))
 
-    async def loadCog(self, cog: str):
+    async def load_cog(self, cog: str):
         try:
             mod = __import__(f'src.cogs.{cog.lower()}', fromlist=[cog.lower().capitalize()])
             _class = getattr(mod, cog.capitalize())
@@ -107,7 +113,7 @@ class Bot(commands.Bot):
             return e
         return
 
-    async def removeCog(self, cog: str):
+    async def unload_cog(self, cog: str):
         try:
             self.remove_cog(cog.lower().capitalize())
             self.loaded_cogs.remove(cog.lower())
@@ -164,7 +170,20 @@ class Bot(commands.Bot):
             for channel in guild.voice_channels:
                 for member in channel.members:
                     if not member.bot:
-                        if member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute:
+                        if member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or \
+                                member.voice.self_mute:
                             await self.user_afk(member.id, channel.id, guild.id)
                         else:
                             await self.user_active(member.id, channel.id, guild.id)
+
+    @tasks.loop(seconds=30)
+    async def voice_timeout(self):
+        timeouts = []
+        for guild_id, voice_state in self.voice_states.items():
+            if voice_state.timed_out:
+                timeouts.append(guild_id)
+                if voice_state.voice:
+                    await voice_state.stop()
+
+        for guild_id in timeouts:
+            self.voice_states.pop(guild_id)

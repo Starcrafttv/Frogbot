@@ -1,11 +1,11 @@
-echo '[FROGBBOT] Updating system'
+echo '[FROGBOT] Updating system'
 sudo apt-get update
 echo '[FROGBOT] Installing ffmpeg'
 sudo apt install ffmpeg
-echo '[FROGBOT] Installing the python 3.9 enviroment'
+echo '[FROGBOT] Installing the python 3.9 environment'
 sudo apt-get install python3.9-venv
 
-echo '[FROGBOT] Starting virtual enviroment'
+echo '[FROGBOT] Starting virtual environment'
 python3.9 -m venv env
 source env/bin/activate
 pip3 install --upgrade pip

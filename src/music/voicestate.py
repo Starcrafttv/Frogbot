@@ -1,10 +1,10 @@
 import asyncio
 import math
 import pickle
-from random import shuffle as Mix
+from random import shuffle as mix
 
 import requests
-from discord import Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, User
+from nextcord import Colour, Embed, FFmpegPCMAudio, PCMVolumeTransformer, User
 from src.bot.bot import Bot
 from src.music.queue import Queue
 from src.music.song import Song
@@ -14,7 +14,7 @@ class VoiceError(Exception):
     pass
 
 
-class VoiceState():
+class VoiceState:
     FFMPEG_OPTIONS = {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
         'options': '-vn',
@@ -29,12 +29,13 @@ class VoiceState():
         self.voice = None
         self.next = asyncio.Event()
 
+        self.timed_out = False
         # Load guild settings
         response = requests.get(f'{self.bot.base_api_url}discord/guild/',
                                 params={'id': guild_id}, headers=self.bot.header).json()
         if response.get('items'):
             self.music_channel_id = response['items'][0]['musicChannelId']
-            self._volume = response['items'][0]['volume']/100
+            self._volume = response['items'][0]['volume'] / 100
             self.timeout = response['items'][0]['timeout']
         else:
             self._volume = 0.5
@@ -63,7 +64,7 @@ class VoiceState():
     async def load_playlist(self, requester: User, playlist_id: int) -> list[Song]:
         with open(f'data/playlists/{playlist_id}.p', 'rb') as f:
             songs = pickle.load(f)
-        Mix(songs)
+        mix(songs)
         for song in songs:
             song.requester_name = f'{requester.name}#{requester.discriminator}'
             song.requester_id = requester.id
@@ -74,18 +75,18 @@ class VoiceState():
             pickle.dump([self.current_song] + self.queue.get(), f)
 
     async def get_queue_embed(self, page: int = 1, page_size: int = 10) -> Embed:
-        pages = math.ceil(self.queue.get_len()/page_size)
+        pages = math.ceil(self.queue.get_len() / page_size)
         if page < 1:
             page = 1
         elif page > pages:
             page = pages
 
-        start = (page-1) * page_size
+        start = (page - 1) * page_size
         end = start + page_size
 
         embed = Embed(title=':scroll: Current Queue:',
-                            description='\u200b',
-                            color=Colour.blurple())
+                      description='\u200b',
+                      color=Colour.blurple())
         embed.set_thumbnail(url=self.bot.logo_url)
 
         if self.current_song:
@@ -94,7 +95,7 @@ class VoiceState():
                             inline=False)
         if self.queue.get_len():
             for i, song in enumerate(self.queue.get_slice(start, end), start=start):
-                embed.add_field(name=f'**`{i+1}.`** {song.title}',
+                embed.add_field(name=f'**`{i + 1}.`** {song.title}',
                                 value=f'By {song.channel_title}, Duration: {song.duration_str}',
                                 inline=False)
 
@@ -105,7 +106,7 @@ class VoiceState():
         return embed
 
     async def skip(self, index: int = 0):
-        if self.is_playing and 0 <= index <= self.queue.get_len()-1:
+        if self.is_playing and 0 <= index <= self.queue.get_len() - 1:
             self.queue._queue = self.queue._queue[index:]
             self.voice.stop()
 
@@ -148,7 +149,8 @@ class VoiceState():
             return True
 
     async def create_buffer(self):
-        if self.queue.get_len() and self._buffer.get('id') != self.queue.get_first().id and self.queue.get_first().duration:
+        if self.queue.get_len() and self._buffer.get(
+                'id') != self.queue.get_first().id and self.queue.get_first().duration:
             self._buffer = {
                 'id': self.queue.get_first().id,
                 'url': await self.queue.get_first().get_mp3_url()
@@ -175,13 +177,8 @@ class VoiceState():
 
                     _timeout += timer
                     if _timeout > self.timeout:
-                        await self.stop()
-                        if self.guild_id in self.bot.voice_states:
-                            self.bot.voice_states.pop(self.guild_id)
-
-                        return
+                        self.timed_out = True
                     await asyncio.sleep(timer)
-
             if self.current_song.duration:
                 if self._buffer.get('id') == self.current_song.id:
                     self._current = {
@@ -219,7 +216,7 @@ class VoiceState():
 
         if self.react_message_id:
             message = await self.bot.get_channel(self.react_message_channel_id).fetch_message(self.react_message_id)
-            await message.clear_reactions()
+            await message.edit(view=None)
 
             self.react_message_id = None
             self.react_message_channel_id = None

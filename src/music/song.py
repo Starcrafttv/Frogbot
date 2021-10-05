@@ -1,6 +1,6 @@
 import re
 
-import discord
+import nextcord
 import youtube_dl
 from discord import Colour, Embed
 from src.music.sec_to_time import sec_to_time
@@ -22,8 +22,8 @@ YTDL_OPTIONS = {
 }
 
 
-class Song():
-    def __init__(self, requester: discord.User, data: dict) -> None:
+class Song:
+    def __init__(self, requester: nextcord.User, data: dict) -> None:
         self.requester_name: str = f'{requester.name}#{requester.discriminator}'
         self.requester_id: int = requester.id
 
@@ -35,7 +35,7 @@ class Song():
         self.channel_id: str = snippet.get('channelId')
         self.channel_title: str = snippet.get('channelTitle')
         self.title = snippet.get('title')
-        #self.description: str = snippet.get('description')
+        # self.description: str = snippet.get('description')
         self.published_at: str = snippet.get('publishedAt')
         content_details = data.get('contentDetails')
         self.duration: int = self._yt_duration_to_seconds(content_details.get('duration'))

@@ -1,5 +1,4 @@
-from discord.ext import commands
-
+from nextcord.ext import commands
 from src.bot.bot import Bot
 
 bot = Bot()

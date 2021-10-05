@@ -1,6 +1,6 @@
 import requests
-from discord import Colour, Embed, File
-from discord.ext import commands
+from nextcord import Colour, Embed, File
+from nextcord.ext import commands
 from src.bot.bot import Bot
 from src.stats.plot import get_leaderboard
 from src.stats.sec_to_time import sec_to_time
@@ -64,29 +64,31 @@ class Leaderboard(commands.Cog):
             description = f'Afk time for the last {requested_days} days' if requested_days else 'Total afk time'
             value = 'Afk time: '
         else:
-            description = f'Messages sent for the last {requested_days} days' if requested_days else 'Total messages sent'
+            description = f'Messages sent for the last {requested_days} days' \
+                if requested_days else 'Total messages sent'
             value = 'Messages: '
             time_type = False
 
         leaderboard = []
         for member in ctx.guild.members:
             if not member.bot:
-                stats = await get_last_days(member.id, f'{member.name}#{member.discriminator}', requested_days, ctx.guild.id
-                                            if not total else False)
+                stats = await get_last_days(member.id,
+                                            f'{member.name}#{member.discriminator}',
+                                            requested_days,
+                                            ctx.guild.id if not total else False)
                 leaderboard.append([stats[0][1], sum(day[r_type]
-                                                     for day in stats[1:]) if requested_days else stats[0][r_type+1]])
+                                                     for day in stats[1:]) if requested_days else stats[0][r_type + 1]])
         leaderboard = sorted(leaderboard, key=lambda user: user[1], reverse=True)[:top]
 
         if plot:
             if await get_leaderboard(
-                [user[0] for user in reversed(leaderboard)],
-                [round(user[1]/86400, 3) for user in reversed(leaderboard)],
+                    [user[0] for user in reversed(leaderboard)],
+                    [round(user[1] / 86400, 3) for user in reversed(leaderboard)],
                     top, time_type, description):
                 await ctx.send(file=File('data/temp/stats.png', filename='stats.png'))
         else:
             embed = Embed(title='Leaderboard:',
                           description=description,
-                          inline=False,
                           colour=Colour.blue())
             for user in leaderboard:
                 embed.add_field(name=user[0],

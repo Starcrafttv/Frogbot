@@ -1,6 +1,6 @@
 import requests
-from discord.ext import commands
-from discord.message import Message
+from nextcord.ext import commands
+from nextcord.message import Message
 from src.bot.bot import Bot
 
 
@@ -24,13 +24,17 @@ class Owner(commands.Cog):
 
     @commands.command(name='setStatus', hidden=True)
     @commands.is_owner()
-    async def setStatus(self, ctx: commands.Context, _type: str = '', message: str = ''):
+    async def set_status(self, ctx: commands.Context, _type: str = '', message: str = ''):
         if not _type:
-            await ctx.send('Choose between \'s\' - streaming, \'p\' - playing, \'w\' - watching and \'l\' - listening to')
+            await ctx.send('Choose between '
+                           '\'s\' - streaming, '
+                           '\'p\' - playing, '
+                           '\'w\' - watching and '
+                           '\'l\' - listening to')
         elif not message:
             await ctx.send('You have to choose a message after the selected type of status.')
         else:
-            await self.bot.setStatus(_type, message)
+            await self.bot.set_status(_type, message)
             await ctx.message.add_reaction('🐸')
 
     @commands.command(name='guilds', hidden=True)

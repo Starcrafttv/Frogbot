@@ -1,9 +1,9 @@
-from random import shuffle as Mix
+from random import shuffle as mix
 
 from src.music.song import Song
 
 
-class Queue():
+class Queue:
     def __init__(self) -> None:
         self._queue = []
 
@@ -60,4 +60,4 @@ class Queue():
         self._queue = []
 
     def shuffle(self):
-        Mix(self._queue)
+        mix(self._queue)

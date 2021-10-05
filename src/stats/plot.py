@@ -9,6 +9,7 @@ plt.rcParams['ytick.color'] = '#ffffff'
 plt.rcParams['text.color'] = '#ffffff'
 plt.rcParams['axes.edgecolor'] = '#ffffff'
 
+
 # TODO alternative for smart_bounds function
 
 
@@ -65,7 +66,7 @@ async def get_raw_stats(username: str, timezone: int, last_days, active: list, a
         dates = []
         xticks = []
         # Create normalized dates for the x-axis
-        for i in range(last_days-1, -1, -1):
+        for i in range(last_days - 1, -1, -1):
             dates.append(str((datetime.utcnow() + timedelta(days=-i, hours=timezone)).date()))
             y, m, d = dates[-1].split('-')
             xticks.append(f'{d}.{m}.{y[2:]}')
@@ -87,14 +88,14 @@ async def get_raw_stats(username: str, timezone: int, last_days, active: list, a
         plt.xticks(x, xticks, rotation=40, ha='right')
         n = (len(dates) + 10) // 10
         [l.set_visible(False) for (i, l) in enumerate(reversed(ax.xaxis.get_ticklabels())) if i %
-            n != 0]
+         n != 0]
         ax.tick_params(axis='x', which='major', labelsize=12)
         ax.tick_params(axis='y', which='major', labelsize=12)
         ax.set_ylabel('')
         ax.set_xlabel('')
         # Set the y-axis ticks as hours
-        plt.yticks([0, 3, 6, 9, 12, 15,  18, 21, 24], ['', '3:00', '6:00',
-                                                       '9:00', '12:00', '15:00', '18:00', '21:00', '24:00'])
+        plt.yticks([0, 3, 6, 9, 12, 15, 18, 21, 24], ['', '3:00', '6:00',
+                                                      '9:00', '12:00', '15:00', '18:00', '21:00', '24:00'])
         plt.title(demojize(username), fontsize=15)
         plt.tight_layout()
         plt.savefig('data/temp/stats.png', dpi=500, facecolor=fig.get_facecolor())
@@ -110,7 +111,7 @@ async def add_plot_points(ax, entries, dates, facecolor, zorder=3):
             if entry[1] > 60 and str(time.date()) == dates[i]:
                 ax.bar(
                     i,
-                    entry[1]/3600,
+                    entry[1] / 3600,
                     bottom=time.hour + (time.minute / 60) + (time.second / 3600),
                     width=0.5,
                     facecolor=facecolor,

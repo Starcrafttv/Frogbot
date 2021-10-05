@@ -4,7 +4,7 @@ import re
 import requests
 import spotipy
 from aiohttp import ClientSession
-from discord import User
+from nextcord import User
 from emoji import demojize
 from googleapiclient.discovery import build
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -21,29 +21,29 @@ async def get_songs(requester: User, query: str) -> list[Song]:
     if query.find('youtube') != -1:
         # Playlist
         if query.find('list=') != -1:
-            id = query[query.find('list=')+5:]
-            if id.find('&') != -1:
-                id = id[:id.find('&')]
-            return await get_youtube_playlist(requester, id)
+            playlist_id = query[query.find('list=')+5:]
+            if playlist_id.find('&') != -1:
+                playlist_id = playlist_id[:playlist_id.find('&')]
+            return await get_youtube_playlist(requester, playlist_id)
         # # Video
         if query.find('watch?v=') != -1:
-            id = query[query.find('watch?v=')+8:]
-            if id.find('&') != -1:
-                id = id[:id.find('&')]
-            return await get_youtube_video(requester, [id])
+            video_id = query[query.find('watch?v=')+8:]
+            if video_id.find('&') != -1:
+                video_id = video_id[:video_id.find('&')]
+            return await get_youtube_video(requester, [video_id])
 
     # Spotify
     if query.find('spotify') != -1:
         # Playlist
         if query.find('playlist/') != -1:
-            return await getSpotifyPlaylist(requester, query[query.find('playlist/')+9:])
+            return await get_spotify_playlist(requester, query[query.find('playlist/') + 9:])
         # Video
         return await getSpotifyTrack(requester, query[query.find('track/')+6:])
     # Youtube Search
     return await search_youtube_video(requester, query)
 
 
-async def get_youtube_playlist(requester: User, id: str) -> list[Song]:
+async def get_youtube_playlist(requester: User, playlist_id: str) -> list[Song]:
     playlist = []
     response = {'nextPageToken': None}
     # Go through each playlist page and extract all videos in it
@@ -55,7 +55,7 @@ async def get_youtube_playlist(requester: User, id: str) -> list[Song]:
             part='contentDetails, snippet',
             maxResults=50,
             pageToken=response['nextPageToken'],
-            playlistId=id
+            playlistId=playlist_id
         )
         response = request.execute()
 
@@ -68,11 +68,11 @@ async def get_youtube_playlist(requester: User, id: str) -> list[Song]:
     return playlist
 
 
-async def get_youtube_video(requester: User, ids: list) -> list[Song]:
+async def get_youtube_video(requester: User, video_ids: list) -> list[Song]:
     videos = []
-    if ids:
-        id_string = ''.join(id + ',' for id in ids[:-1])
-        id_string += ids[-1]
+    if video_ids:
+        id_string = ''.join(video_id + ',' for video_id in video_ids[:-1])
+        id_string += video_ids[-1]
 
         request = youtube.videos().list(
             part='snippet,contentDetails',
@@ -87,8 +87,8 @@ async def get_youtube_video(requester: User, ids: list) -> list[Song]:
 
 async def search_youtube_video(requester: User, query: str, max_results: int = 1) -> list[Song]:
     url = demojize(f'https://www.youtube.com/results?search_query={query.replace(" ", "+")}&sp=EgIQAQ%253D%253D')
-    request = requests.get(url)
-    return await get_youtube_video(requester, re.findall(r'watch\?v=(\S{11})', request.text)[:max_results])
+    response = requests.get(url)
+    return await get_youtube_video(requester, re.findall(r'watch\?v=(\S{11})', response.text)[:max_results])
 
 
 async def fetch(url: str, session) -> str:
@@ -98,7 +98,7 @@ async def fetch(url: str, session) -> str:
         if ids and len(ids):
             return ids[0]
         else:
-            return
+            return ""
 
 
 async def youtube_multi_search(queries: list[str]) -> list[str]:
@@ -115,9 +115,9 @@ async def youtube_multi_search(queries: list[str]) -> list[str]:
         return list(filter(None, pages))
 
 
-async def getSpotifyPlaylist(requester: User, id: str) -> list[Song]:
+async def get_spotify_playlist(requester: User, playlist_id: str) -> list[Song]:
     songs = []
-    results = sp.playlist(id)
+    results = sp.playlist(playlist_id)
     tracks = results['tracks']
     items = [await get_track_query(track_meta) for track_meta in tracks['items']]
 
@@ -136,7 +136,7 @@ async def get_track_query(track_meta):
     return f'{track_meta["track"]["name"]} {track_meta["track"]["album"]["artists"][0]["name"]}'
 
 
-async def getSpotifyTrack(requester: User, id: str) -> list[Song]:
-    meta = sp.track(id)
-    trackName = f'{meta["name"]} {meta["album"]["artists"][0]["name"]}'
-    return await search_youtube_video(requester, trackName)
+async def getSpotifyTrack(requester: User, track_id: str) -> list[Song]:
+    meta = sp.track(track_id)
+    track_name = f'{meta["name"]} {meta["album"]["artists"][0]["name"]}'
+    return await search_youtube_video(requester, track_name)

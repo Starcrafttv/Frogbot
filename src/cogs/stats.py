@@ -1,8 +1,8 @@
 import requests
 import src.stats.plot as plt
 import src.stats.stats as util
-from discord import Colour, Embed, File
-from discord.ext import commands
+from nextcord import Colour, Embed, File
+from nextcord.ext import commands
 from src.bot.bot import Bot
 from src.stats.sec_to_time import sec_to_time
 
@@ -50,19 +50,20 @@ class Stats(commands.Cog):
             for member in ctx.guild.members:
                 if f'{member.name}#{member.discriminator}'.lower().find(other_user) != -1:
                     username = f'{member.name}#{member.discriminator}'
-                    userID = member.id
+                    user_id = member.id
                     break
             else:
                 await ctx.send(f'User \'{other_user}\' not found.')
                 return
         else:
             username = f'{ctx.author.name}#{ctx.author.discriminator}'
-            userID = ctx.author.id
+            user_id = ctx.author.id
 
-        stats = await util.get_last_days(userID, username, requested_days,
+        stats = await util.get_last_days(user_id, username, requested_days,
                                          ctx.guild.id if not total and ctx.guild else False, raw)
 
         if raw:
+
             if await plt.get_raw_stats(stats[0], stats[1], stats[2], stats[3], stats[4]):
                 await ctx.send('', file=File('data/temp/stats.png', filename='stats.png'))
         elif plot:
@@ -72,8 +73,8 @@ class Stats(commands.Cog):
             embed = Embed(
                 title=username,
                 description=f'Total active time: {await sec_to_time(stats[0][2])}\n'
-                f'Total afk Time: {await sec_to_time(stats[0][3])}\n'
-                f'Total messages sent: {stats[0][4]}', inline=False, colour=Colour.blue())
+                            f'Total afk Time: {await sec_to_time(stats[0][3])}\n'
+                            f'Total messages sent: {stats[0][4]}', colour=Colour.blue())
             for day in stats[1:]:
                 y, m, d = day[0].split('-')
                 embed.add_field(name=f'{d}.{m}.{y[2:]}:',

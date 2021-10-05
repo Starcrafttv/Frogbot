@@ -1,10 +1,11 @@
 import os
 from time import time
 
+from src.bot.buttons import MenuButtons, FindMenuButtons
 import requests
 import src.music.search as search
-from discord import ChannelType, Colour, Embed, Message, Reaction, User
-from discord.ext import commands
+from nextcord import ChannelType, Colour, Embed, Message, Reaction, Member
+from nextcord.ext import commands
 from src.bot.bot import Bot
 from src.music.sec_to_time import sec_to_time
 from src.music.song import Song
@@ -38,7 +39,8 @@ class Music(commands.Cog):
         response = requests.get(f'{self.bot.base_api_url}discord/guild/',
                                 params={'id': guild.id}, headers=self.bot.header).json()
 
-        if (response.get('items') and response['items'][0]['musicRoleId'] and guild.get_role(response['items'][0]['musicRoleId']) not in user.roles):
+        if response.get('items') and response['items'][0]['musicRoleId'] and guild.get_role(
+                response['items'][0]['musicRoleId']) not in user.roles:
             await channel.send('You need permissions to use this command.')
             return False
 
@@ -134,17 +136,20 @@ class Music(commands.Cog):
                 await ctx.voice_state.skip()
                 await self.play_command_message(ctx, songs)
 
-    async def play_command_message(self, ctx: commands.Context, songs: list[Song], position: int = 0, time_until_playing: int = 0):
+    async def play_command_message(self, ctx: commands.Context, songs: list[Song], position: int = 0,
+                                   time_until_playing: int = 0):
         if len(songs) == 1:
             embed = Embed(
-                title=f'Added song to queue at position {position+1}',
-                description=f'[{songs[0].title}]({songs[0].url})\nCreator: {songs[0].channel_title}, Duration: {songs[0].duration_str}',
-                inline=False, colour=Colour.blue())
+                title=f'Added song to queue at position {position + 1}',
+                description=f'[{songs[0].title}]({songs[0].url})\n'
+                            f'Creator: {songs[0].channel_title}, Duration: {songs[0].duration_str}',
+                colour=Colour.blue())
         else:
             embed = Embed(
-                title=f'Added {len(songs)} songs to queue at position {position+1}',
-                description=f'1. ‎[{songs[0].title}]({songs[0].url})\n...\n{len(songs)}. ‎‎[{songs[-1].title}]({songs[-1].url})',
-                inline=False, colour=Colour.blue())
+                title=f'Added {len(songs)} songs to queue at position {position + 1}',
+                description=f'1. ‎[{songs[0].title}]({songs[0].url})\n...\n{len(songs)}. '
+                            f'‎‎[{songs[-1].title}]({songs[-1].url})',
+                colour=Colour.blue())
 
         if time_until_playing > 0:
             embed.set_footer(text=f'Time until playing: {sec_to_time(time_until_playing)}')
@@ -159,7 +164,7 @@ class Music(commands.Cog):
 
         if ctx.voice_state.voice:
             try:
-                args = int(args)-1
+                args = int(args) - 1
             except ValueError:
                 args = 0
 
@@ -225,7 +230,7 @@ class Music(commands.Cog):
             return
 
         if ctx.voice_state.queue.get_len() and 0 <= index - 1 <= ctx.voice_state.queue.get_len():
-            ctx.voice_state.queue.pop(index-1)
+            ctx.voice_state.queue.pop(index - 1)
             await ctx.message.add_reaction('🐸')
 
     @commands.command(name='move', aliases=['m'])
@@ -234,11 +239,11 @@ class Music(commands.Cog):
             return
 
         if (
-            ctx.voice_state.queue.get_len()
-            and 0 <= from_index - 1 <= ctx.voice_state.queue.get_len()
-            and 0 <= to_index - 1 <= ctx.voice_state.queue.get_len()
+                ctx.voice_state.queue.get_len()
+                and 0 <= from_index - 1 <= ctx.voice_state.queue.get_len()
+                and 0 <= to_index - 1 <= ctx.voice_state.queue.get_len()
         ):
-            song = ctx.voice_state.queue.pop(from_index-1)
+            song = ctx.voice_state.queue.pop(from_index - 1)
             ctx.voice_state.queue.put_index(song, to_index - 1)
             await ctx.message.add_reaction('🐸')
 
@@ -317,8 +322,7 @@ class Music(commands.Cog):
             if not response.get('items'):
                 for item in requests.get(
                         f'{self.bot.base_api_url}playlist/connections/', params={'guildId': ctx.guild.id},
-                        headers=self.bot.header).json().get(
-                        'items', []):
+                        headers=self.bot.header).json().get('items', []):
                     response = requests.get(f'{self.bot.base_api_url}playlist/',
                                             params={'id': item['playlistId'],
                                                     'name': playlist_name},
@@ -366,7 +370,7 @@ class Music(commands.Cog):
                 await ctx.send('No songs to save. Please add at least one song to the queue.')
 
     @commands.command(name='allplaylists', aliases=['ap'])
-    async def _allplaylists(self, ctx: commands.Context, *, args: str = ''):
+    async def _all_playlists(self, ctx: commands.Context, *, args: str = ''):
         playlists = '\u200b'
         user_playlists = ''.join(
             f'- **`{playlist["name"]}`**\n'
@@ -374,9 +378,7 @@ class Music(commands.Cog):
                 f'{self.bot.base_api_url}playlist/',
                 params={'userId': ctx.author.id},
                 headers=self.bot.header,
-            )
-            .json()
-            .get('items', [])
+            ).json().get('items', [])
         )
 
         if user_playlists:
@@ -384,9 +386,8 @@ class Music(commands.Cog):
 
         guild_playlists = ''
         for item in requests.get(
-            f'{self.bot.base_api_url}playlist/connections/', params={'guildId': ctx.guild.id},
-            headers=self.bot.header).json().get(
-                'items', []):
+                f'{self.bot.base_api_url}playlist/connections/', params={'guildId': ctx.guild.id},
+                headers=self.bot.header).json().get('items', []):
             response = requests.get(f'{self.bot.base_api_url}playlist/',
                                     params={'id': item['playlistId']},
                                     headers=self.bot.header).json()
@@ -402,13 +403,12 @@ class Music(commands.Cog):
 
         embed = Embed(title=':notepad_spiral: Playlists:',
                       description=playlists,
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         await ctx.send(embed=embed)
 
     @commands.command(name='deletePlaylist', aliases=['dp', 'rmp'])
-    async def _deletePlaylist(self, ctx, *, playlist_name):
+    async def _delete_playlist(self, ctx, *, playlist_name):
         response = requests.get(
             f'{self.bot.base_api_url}playlist/', params={'userId': ctx.author.id},
             headers=self.bot.header).json()
@@ -464,13 +464,12 @@ class Music(commands.Cog):
     async def _ping(self, ctx: commands.Context, *, args: str = ''):
         embed = Embed(title='Latency',
                       description='‎‎\u200b',
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
-        embed.add_field(name='Client latency:', value=f' **`{round(self.bot.latency*1000)}ms`**', inline=False)
+        embed.add_field(name='Client latency:', value=f' **`{round(self.bot.latency * 1000)}ms`**', inline=False)
         if ctx.guild and ctx.voice_state.voice:
-            latency = ctx.voice_client.latency*1000
-            avg_latency = ctx.voice_client.average_latency*1000
+            latency = ctx.voice_client.latency * 1000
+            avg_latency = ctx.voice_client.average_latency * 1000
             if latency != float('inf'):
                 embed.add_field(
                     name='Voice client latency:',
@@ -492,34 +491,14 @@ class Music(commands.Cog):
 
         embed = Embed(title=f'Results for: **`{args}`**',
                       description='‎‎\u200b',
-                      inline=False,
                       colour=Colour.blue())
         embed.set_thumbnail(url=self.bot.logo_url)
         for i, video in enumerate(videos):
             embed.add_field(
-                name=f'{i+1}. {video.title}',
+                name=f'{i + 1}. {video.title}',
                 value=f'Creator: {video.channel_title}, Duration: {video.duration_str}', inline=False)
         embed.set_footer(text='React to add to queue')
-        message = await ctx.send(embed=embed)
-
-        self.bot.open_searches[message.id] = {
-            'requester': ctx.author.id,
-            'videos': videos,
-            'channel_id': ctx.channel.id,
-            'time': time()
-        }
-
-        await message.add_reaction('1️⃣')
-        await message.add_reaction('2️⃣')
-        await message.add_reaction('3️⃣')
-        await message.add_reaction('4️⃣')
-        await message.add_reaction('5️⃣')
-
-        for message_id in self.bot.open_searches:
-            if time() - self.bot.open_searches[message_id]['time'] > 3600:
-                self.bot.open_searches.pop(message_id)
-                msg = await self.bot.get_channel(self.bot.open_searches[message_id]['channel_id']).fetch_message(message_id)
-                await msg.clear_reactions()
+        message = await ctx.send(embed=embed, view=FindMenuButtons(self.bot, ctx.voice_state, videos))
 
     @_join.before_invoke
     @_play.before_invoke
@@ -543,114 +522,27 @@ class Music(commands.Cog):
     # Events
 
     @commands.Cog.listener()
-    async def on_playing_song(self, voiceState: VoiceState):
-        if voiceState.music_channel_id:
-            channel = self.bot.get_channel(voiceState.music_channel_id)
+    async def on_playing_song(self, voice_state: VoiceState):
+        if voice_state.music_channel_id:
+            channel = self.bot.get_channel(voice_state.music_channel_id)
             if channel and channel.guild and channel.type == ChannelType.text:
-                embed = await voiceState.current_song.create_embed()
-                if voiceState.queue.get_len() and not voiceState._loop_song:
-                    song = voiceState.queue.get_first()
+                embed = await voice_state.current_song.create_embed()
+                if voice_state.queue.get_len() and not voice_state._loop_song:
+                    song = voice_state.queue.get_first()
                     embed.add_field(name='‎‎\u200b',
                                     value=f'Next: [{song.title}]({song.url})',
                                     inline=False)
                 message = await channel.send(embed=embed)
-                self.bot.dispatch('new_reaction_message', voiceState, message)
+                self.bot.dispatch('new_reaction_message', voice_state, message)
 
     @commands.Cog.listener()
-    async def on_new_reaction_message(self, voiceState: VoiceState, message: Message):
-        if voiceState.react_message_id:
-            _message = await self.bot.get_channel(voiceState.react_message_channel_id).fetch_message(voiceState.react_message_id)
-            await _message.clear_reactions()
-        await message.add_reaction('⏮️')
-        await message.add_reaction('⏯️')
-        await message.add_reaction('⏭️')
-        await message.add_reaction('🔀')
-        await message.add_reaction('🔢')
-        await message.add_reaction('❌')
+    async def on_new_reaction_message(self, voice_state: VoiceState, message: Message):
+        if voice_state.react_message_id:
+            old_message = await self.bot.get_channel(voice_state.react_message_channel_id).fetch_message(
+                voice_state.react_message_id)
+            await old_message.edit(view=None)
 
-        voiceState.react_message_id = message.id
-        voiceState.react_message_channel_id = message.channel.id
+        await message.edit(view=MenuButtons(self.bot, voice_state))
 
-    @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: Reaction, user: User):
-        if user.bot or not user.guild:
-            return
-        state = self.bot.voice_states.get(user.guild.id)
-
-        if (state and state.react_message_id == reaction.message.id):
-            await reaction.message.remove_reaction(reaction.emoji, user)
-
-            if not await self.check(reaction.message.channel, user.guild, user):
-                return
-
-            if reaction.emoji == '⏯️':
-                if state.is_playing and state.voice.is_playing():
-                    state.voice.pause()
-                elif state.is_playing and state.voice.is_paused():
-                    state.voice.resume()
-            elif reaction.emoji == '⏭️':
-                await state.skip()
-            elif reaction.emoji == '⏮️':
-                await state.play_previous()
-            elif reaction.emoji == '🔀':
-                await state.shuffle()
-            elif reaction.emoji == '🔢':
-                message = await reaction.message.channel.send(embed=await state.get_queue_embed())
-                self.bot.dispatch('new_reaction_message', state, message)
-            elif reaction.emoji == '❌':
-                if state.voice:
-                    await state.stop()
-                if user.guild.id in self.bot.voice_states:
-                    self.bot.voice_states.pop(user.guild.id)
-                #del self.bot.voice_states[user.guild.id]
-        elif reaction.message.id in self.bot.open_searches:
-            await reaction.message.remove_reaction(reaction.emoji, user)
-
-            if not await self.check(reaction.message.channel, user.guild, user):
-                return
-
-            if reaction.emoji == '1️⃣':
-                await self.play_searched_song(user, reaction.message, reaction.message.id, 0, reaction.message.guild.id)
-            elif reaction.emoji == '2️⃣':
-                await self.play_searched_song(user, reaction.message, reaction.message.id, 1, reaction.message.guild.id)
-            elif reaction.emoji == '3️⃣':
-                await self.play_searched_song(user, reaction.message, reaction.message.id, 2, reaction.message.guild.id)
-            elif reaction.emoji == '4️⃣':
-                await self.play_searched_song(user, reaction.message, reaction.message.id, 3, reaction.message.guild.id)
-            elif reaction.emoji == '5️⃣':
-                await self.play_searched_song(user, reaction.message, reaction.message.id, 4, reaction.message.guild.id)
-
-    async def play_searched_song(self, user, message, reaction_message_id, number, guild_id):
-        state = self.bot.voice_states.get(user.guild.id)
-
-        destination = user.voice.channel
-        if state and state.voice:
-            await state.voice.move_to(destination)
-        else:
-            state = VoiceState(self.bot, guild_id)
-            state.voice = await destination.connect()
-            self.bot.voice_states[guild_id] = state
-
-        song = self.bot.open_searches[reaction_message_id]['videos'][number]
-        song.requester_name = f'{user.name}#{user.discriminator}'
-        song.requester_id = user.id
-
-        await message.clear_reactions()
-        self.bot.open_searches.pop(message.id)
-
-        position = state.queue.get_len()
-        time_until_playing = sum(song.duration for song in state.queue.get())
-
-        state.queue.put([song])
-
-        embed = Embed(
-            title=f'Added song to queue at position {position+1}:',
-            description=f'[{song.title}]({song.url})\nCreator: {song.channel_title}, Duration: {song.duration_str}',
-            inline=False, colour=Colour.blue())
-
-        if time_until_playing > 0:
-            embed.set_footer(text=f'Time until playing: {sec_to_time(time_until_playing)}')
-
-        embed.set_thumbnail(url=self.bot.logo_url)
-
-        await message.channel.send(embed=embed)
+        voice_state.react_message_id = message.id
+        voice_state.react_message_channel_id = message.channel.id

@@ -1,6 +1,6 @@
 import requests
-from discord import Message
-from discord.ext import commands
+from nextcord import Message
+from nextcord.ext import commands
 from src.bot.bot import Bot
 
 
@@ -21,7 +21,8 @@ class Dmsystem(commands.Cog):
                 await channel.send(f'{message.author.name}: {message.content}')
             else:
                 channel = await self.bot.fetch_channel(self.bot.support_log_channel_id)
-                new_channel = await channel.guild.create_text_channel(f'ticket-{message.author.name}-{message.author.id}')
+                new_channel = await channel.guild.create_text_channel(
+                    f'ticket-{message.author.name}-{message.author.id}')
                 category = self.bot.get_channel(self.bot.support_category_id)
                 await new_channel.edit(category=category)
                 await new_channel.set_permissions(channel.guild.default_role,
@@ -41,7 +42,8 @@ class Dmsystem(commands.Cog):
                 }
                 requests.put(f'{self.bot.base_api_url}discord/direct/message/', params=request, headers=self.bot.header)
 
-                await message.reply('Thank you for your message! Our mod team will reply to you as soon as possible.', mention_author=False)
+                await message.reply('Thank you for your message! Our mod team will reply to you as soon as possible.',
+                                    mention_author=False)
             return
         response = requests.get(f'{self.bot.base_api_url}discord/direct/message/',
                                 params={'channelId': message.channel.id}, headers=self.bot.header).json()
@@ -53,8 +55,8 @@ class Dmsystem(commands.Cog):
                 await self.bot.get_user(int(user_id[0][0])).send(message.content)
                 await message.add_reaction('✅')
 
-    @ commands.command(name='close', hidden=True)
-    @ commands.is_owner()
+    @commands.command(name='close', hidden=True)
+    @commands.is_owner()
     async def close(self, ctx: commands.Context):
         response = requests.get(f'{self.bot.base_api_url}discord/direct/message/',
                                 params={'channelId': ctx.channel.id}, headers=self.bot.header).json()
@@ -65,15 +67,16 @@ class Dmsystem(commands.Cog):
             log = f'User-ID:\'{response["items"][0]["userId"]}\'\n'
             messages = await ctx.channel.history(limit=200).flatten()
             for message in reversed(messages):
-                log = f'{log}{message.created_at.strftime("%d.%m.%y %H:%M")} | {message.author.name}: {message.content}\n'
+                log = f'{log}{message.created_at.strftime("%d.%m.%y %H:%M")} | ' \
+                      f'{message.author.name}: {message.content}\n '
             log = f'```{log}```'
-            logChannel = ctx.channel.guild.get_channel(self.bot.support_log_channel_id)
-            await logChannel.send(log)
+            log_channel = ctx.channel.guild.get_channel(self.bot.support_log_channel_id)
+            await log_channel.send(log)
             await ctx.channel.delete()
 
-    @ commands.command(name='open Dms', aliases=['od'], hidden=True)
-    @ commands.is_owner()
-    async def openDms(self, ctx: commands.Context):
+    @commands.command(name='open Dms', aliases=['od'], hidden=True)
+    @commands.is_owner()
+    async def open_dms(self, ctx: commands.Context):
         response = requests.get(f'{self.bot.base_api_url}discord/direct/message/',
                                 params={}, headers=self.bot.header).json()
 

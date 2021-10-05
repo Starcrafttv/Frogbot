@@ -1,6 +1,8 @@
+import json
+
 import requests
-from discord import Guild, Member, Message, User, VoiceState
-from discord.ext import commands
+from nextcord import Guild, Member, Message, User, VoiceState
+from nextcord.ext import commands
 from src.bot.bot import Bot
 
 
@@ -26,19 +28,19 @@ class Recorder(commands.Cog):
                             'channelId': channel.id,
                             'guildId': guild.id
                         }
-                        if member.voice.afk or member.voice.deaf or member.voice.mute or member.voice.self_deaf or member.voice.self_mute:
+                        if member.voice.afk or member.voice.deaf or \
+                                member.voice.mute or member.voice.self_deaf or member.voice.self_mute:
                             requests.put(f'{self.bot.base_api_url}discord/afk/', params=params, headers=self.bot.header)
                         else:
                             requests.put(f'{self.bot.base_api_url}discord/active/',
                                          params=params, headers=self.bot.header)
-        # Go through all available user and check if they are in the database
         for user in self.bot.users:
             requests.put(f'{self.bot.base_api_url}discord/user/',
                          params={'id': user.id,
                                  'name': user.name,
                                  'discriminator': user.discriminator,
                                  'createdAt': user.created_at.timestamp(),
-                                 'avatar': user.avatar,
+                                 'avatar': str(user.avatar),
                                  'bot': user.bot},
                          headers=self.bot.header)
 
@@ -100,26 +102,46 @@ class Recorder(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: Guild):
-        # add the guild to the database if it is new
-        self.bot.logger.info(f'NEW GUILD - {guild.name} - {guild.id} - Members: {guild.member_count}')
-        requests.put(f'{self.bot.base_api_url}discord/guild/',
-                     params={'id': guild.id,
-                             'name': guild.name,
-                             'ownerId': guild.owner_id,
-                             'createdAt': guild.created_at.timestamp(),
-                             'banner': guild.banner},
-                     headers=self.bot.header)
+        # Check if the guild is whitelisted and leave if it is not
+        whitelisted = False
+        with open('data/whitelisted_guilds.json') as file:
+            data = json.load(file)
+            if guild.id in data:
+                whitelisted = True
 
-        # Check for new users
-        for member in guild.members:
-            requests.put(f'{self.bot.base_api_url}discord/user/',
-                         params={'id': member.id,
-                                 'name': member.name,
-                                 'discriminator': member.discriminator,
-                                 'createdAt': member.created_at.timestamp(),
-                                 'avatar': member.avatar,
-                                 'bot': member.bot},
+        if whitelisted:
+            # add the guild to the database if it is new
+            self.bot.logger.info(f'NEW GUILD - {guild.name} - {guild.id} - Members: {guild.member_count}')
+            requests.put(f'{self.bot.base_api_url}discord/guild/',
+                         params={'id': guild.id,
+                                 'name': guild.name,
+                                 'ownerId': guild.owner_id,
+                                 'createdAt': guild.created_at.timestamp(),
+                                 'banner': guild.banner},
                          headers=self.bot.header)
+
+            # Check for new users
+            for member in guild.members:
+                requests.put(f'{self.bot.base_api_url}discord/user/',
+                             params={'id': member.id,
+                                     'name': member.name,
+                                     'discriminator': member.discriminator,
+                                     'createdAt': member.created_at.timestamp(),
+                                     'avatar': member.avatar,
+                                     'bot': member.bot},
+                             headers=self.bot.header)
+        else:
+            await guild.leave()
+
+        for guild in self.bot.guilds:
+            whitelisted = False
+            with open('data/whitelisted_guilds.json') as file:
+                data = json.load(file)
+                if guild.id in data:
+                    whitelisted = True
+
+            if not whitelisted:
+                await guild.leave()
 
     @commands.Cog.listener()
     async def on_message(self, message: Message):
